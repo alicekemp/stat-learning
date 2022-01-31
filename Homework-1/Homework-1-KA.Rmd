@@ -1,31 +1,107 @@
 ---
-title: "Homework-1-AK"
+title: "Homework 1"
 author: "Alice Kemp"
 date: "1/27/2022"
-output: pdf_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-librarian::shelf(tidyverse, haven, stargazer, update_all = TRUE)
+librarian::shelf(
+  tidyverse, 
+  haven, 
+  stargazer, 
+  RColorBrewer,
+  here,
+  ggmap,
+  scales, 
+  ggridges,
+  viridis,
+  gganimate, 
+  gifski, 
+  future, 
+  geosphere,
+  maps, 
+  airportr)
+## color palette brewing
+  plasma = c("darkorange2", "coral2", "orangered2", "violetred2", "magenta4", "purple3", "mediumblue")
+## datasets loading...
+ABIA = read_csv(here(("data/ABIA.csv"))) %>%
+  mutate(delay_total = ArrDelay - DepDelay,
+         DayOfWeek = recode(DayOfWeek, 
+       "1"="Monday",
+       "2"="Tuesday",
+       "3"="Wednesday",
+       "4"="Thursday",
+       "5"="Friday",
+       "6"="Saturday",
+       "7"="Sunday"),
+       DayOfWeek = fct_relevel(DayOfWeek, 
+            "Monday", "Tuesday", "Wednesday", 
+            "Thursday", "Friday", "Saturday", 
+            "Sunday")) %>%
+write_csv(here("data/ABIA_clean.csv"))
+
+#filter for AA data for scatterplot
+ABIA_AA = ABIA %>%
+  filter(UniqueCarrier == "AA")
+write_csv(here("data/ABIA_AA_clean.csv"))
 ```
 
-## R Markdown
+## **Problem 1**   
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+### Jetstrem Intl (OH) has the largest range of delays, while Envoy Air (MQ) has the smallest range in delays, and the lowest delays overall. 
+```{r ridgeplot, echo=FALSE}
+# ridge line plot
+read_csv(here("data/ABIA_clean.csv"))
+ggplot(ABIA, aes(x = delay_total, y = UniqueCarrier, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 2, rel_min_height = 0.005) +
+  scale_fill_viridis(name = "delay", option = "C") +
+  xlim(-75,75) + 
+  xlab("Total Delay (min)") + 
+  ylab("Carrier Code") + 
+  labs(title = 'Total Delay by Carrier') +
+    theme(
+      plot.title = element_text(face="bold", hjust=0.5),
+      text=element_text(size=10),
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    )
+ggsave(here("figures/delay_by_carrier.png"), width=8, height=4.5)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+### Scatterplot
+```{r, echo=FALSE, warning=FALSE, fig.show='animate'}
+gganim2 = ggplot(ABIA_AA, aes(x=DepTime, y=delay_total, size = Distance, color = DayOfWeek)) +
+  geom_point(aes(group=DepTime, alpha=0.7)) +
+  scale_color_discrete(type = plasma) + 
+  ylim(-50,150) +
+  transition_states(DayOfWeek,transition_length = 1, state_length = 1) + 
+  enter_fade() + 
+  exit_fade() + 
+  ease_aes("linear") + 
+  ggtitle('Net delay vs. Departure time', subtitle = 'Day of Week: {closest_state}') + 
+  xlab("Departure Time (hhmm)") + 
+  ylab("Net Delay (min)")
+future::plan("multiprocess", workers = 4L)
+animate(gganim2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Problem 2
+```{r, echo=FALSE, warning=FALSE}
+
+```
+
+
+
+
+
+
+
+
+
+
+
