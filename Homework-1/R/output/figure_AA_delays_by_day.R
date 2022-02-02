@@ -12,7 +12,7 @@ gganim2 = ggplot(ABIA_AA, aes(x=DepTime, y=delay_total, size = Distance, color =
   xlab("Departure Time (hhmm)") + 
   ylab("Net Delay (min)")
 
-future::plan("multiprocess", workers = 4L)
+future::plan("multicore", workers = 4L)
 
 animate(gganim2)
 

@@ -19,7 +19,12 @@ librarian::shelf(
   maps, 
   airportr, 
   kable, 
-  kableExtra)
+  kableExtra,
+  rsample,
+  caret,
+  modelr,
+  parallel,
+  foreach)
 ## color palette brewing
 plasma = c("darkorange2", "coral2", "orangered2", "violetred2", "magenta4", "purple3", "mediumblue")
 

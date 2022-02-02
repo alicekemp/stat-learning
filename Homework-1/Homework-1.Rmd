@@ -1,0 +1,192 @@
+---
+title: "Homework-1"
+author: "Alice Kemp"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!("librarian" %in% rownames(utils::installed.packages()))) {
+  utils::install.packages("librarian")
+}
+librarian::shelf(
+  tidyverse,
+  dplyr,
+  haven, 
+  stargazer, 
+  RColorBrewer,
+  here,
+  ggmap,
+  scales, 
+  ggridges,
+  viridis,
+  gganimate, 
+  gifski, 
+  future, 
+  geosphere,
+  maps, 
+  airportr, 
+  kable, 
+  kableExtra,
+  rsample,
+  caret,
+  modelr,
+  parallel,
+  foreach)
+
+```
+
+## **1) Data visualization: flights at ABIA**
+
+```{r abia}
+# clean code and filter for largest airline (AA)
+ABIA_AA = read_csv(here(("data/ABIA.csv"))) %>%
+  mutate(delay_total = ArrDelay - DepDelay,
+         DayOfWeek = recode(DayOfWeek, 
+                            "1"="Monday",
+                            "2"="Tuesday",
+                            "3"="Wednesday",
+                            "4"="Thursday",
+                            "5"="Friday",
+                            "6"="Saturday",
+                            "7"="Sunday"),
+         DayOfWeek = fct_relevel(DayOfWeek, 
+                                 "Monday", "Tuesday", "Wednesday", 
+                                 "Thursday", "Friday", "Saturday", 
+                                 "Sunday")) %>%
+  filter(UniqueCarrier == "AA") %>%
+  write_csv(here("data/ABIA_AA_clean.csv"))
+
+# build animated scatterplot 
+plasma = c("darkorange2", "coral2", "orangered2", "violetred2", "magenta4", "purple3", "mediumblue")
+gganim2 = ggplot(ABIA_AA, aes(x=DepTime, y=delay_total, size = Distance, color = DayOfWeek)) +
+  geom_point(aes(group=DepTime, alpha=0.7)) +
+  scale_color_discrete(type = plasma) + 
+  ylim(-50,150) +
+  transition_states(DayOfWeek,transition_length = 1, state_length = 1) + 
+  enter_fade() + 
+  exit_fade() + 
+  ease_aes("linear") + 
+  ggtitle('Net delay vs. Departure time', subtitle = 'Day of Week: {closest_state}') + 
+  xlab("Departure Time (hhmm)") + 
+  ylab("Net Delay (min)")
+future::plan("multicore", workers = 4L)
+animate(gganim2)
+anim_save("AA_delays_by_day.gif", path = "figures")
+```
+
+
+```{r billboard}
+
+```
+
+
+```{r olympics}
+
+```
+
+## **4) K-nearest neighbors**
+
+```{r sclass}
+######################################################## 
+# Trim: 350 
+########################################################  
+sclass = read.csv("/Users/alicekemp/statistical-learning/stat-learning/Homework-1/data/sclass.csv") %>%
+  select(trim, mileage, price) %>%
+  filter(trim %in% c(350,"65 AMG")) %>%
+  write_csv(here("data/sclass_clean.csv")) 
+
+sclass350 = sclass %>%
+  filter(trim==350)
+
+# create train/test splits
+sclass350_split = initial_split(sclass350, prop = 0.8)
+sclass350_train = training(sclass350_split)
+sclass350_test = testing(sclass350_split)
+
+# KNN models
+rmse_out = foreach(i=2:100, .combine='c') %do% {
+  # train the model and calculate RMSE on the test set
+  knn_model = knnreg(price ~ mileage, data=sclass350_train, k = i)
+  modelr::rmse(knn_model, sclass350_test)
+} 
+
+# plot K vs. RMSE
+k_vals = seq(2,100,1)
+df = data.frame(k_vals, rmse_out)
+ggplot(df) + 
+  geom_line(aes(x = k_vals, y = rmse_out), color = "steelblue3") + 
+  xlab("K") + 
+  labs(title = "K-Fold Cross Validation: K vs. RMSE") 
+
+# find optimal K (minimum RMSE) = 32
+optimal_k = df %>%
+  group_by(k_vals) %>%
+  arrange(rmse_out)
+
+# attach predictions to the test df
+knn32 = knnreg(price ~ mileage, data=sclass350_train, k = 32)
+
+sclass350_test = sclass350_test %>%
+  mutate(price_pred = predict(knn32, sclass350_test))
+
+# plot data and KNN model fit 
+ggplot(data = sclass350_test) + 
+  geom_point(mapping = aes(x =  mileage, y = price), alpha=0.2) + 
+  geom_line(aes(x = mileage, y = price_pred), color='steelblue3', size=1.5) +
+  labs(
+    title = "Mercedes S Class: Mileage vs. Price",
+    subtitle = "Trim level: 350 | KNN Model (K=32)")
+
+######################################################## 
+# Trim: 65 AMG
+######################################################## 
+
+sclass65 = sclass %>%
+  filter(trim=="65 AMG")
+
+# create train/test splits
+sclass65_split = initial_split(sclass65, prop = 0.8)
+sclass65_train = training(sclass65_split)
+sclass65_test = testing(sclass65_split)
+
+# KNN models
+rmse_out = foreach(i=2:100, .combine='c') %do% {
+  # train the model and calculate RMSE on the test set
+  knn_model = knnreg(price ~ mileage, data=sclass65_train, k = i)
+  modelr::rmse(knn_model, sclass65_test)
+} 
+
+# plot K vs. RMSE
+k_vals = seq(2,100,1)
+df = data.frame(k_vals, rmse_out)
+ggplot(df) + 
+  geom_line(aes(x = k_vals, y = rmse_out), color = "steelblue3") + 
+  xlab("K") + 
+  labs(title = "K-Fold Cross Validation: K vs. RMSE") 
+
+# find optimal K (minimum RMSE) = 10
+optimal_k = df %>%
+  group_by(k_vals) %>%
+  arrange(rmse_out)
+
+# attach predictions to the test df
+knn10 = knnreg(price ~ mileage, data=sclass65_train, k = 10)
+
+sclass65_test = sclass65_test %>%
+  mutate(price_pred = predict(knn10, sclass65_test))
+
+ggplot(data = sclass65_test) + 
+  geom_point(mapping = aes(x =  mileage, y = price), alpha=0.2) + 
+  geom_line(aes(x = mileage, y = price_pred), color='steelblue3', size=1.5) +
+  labs(
+    title = "Mercedes S Class: Mileage vs. Price",
+    subtitle = "Trim level: 65 AMG | KNN Model (K=10)")
+```
+
+
+
+
+
+
+
