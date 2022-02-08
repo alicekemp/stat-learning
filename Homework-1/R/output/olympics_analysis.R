@@ -1,7 +1,6 @@
 ### Wrangling the Olympics
-olympics_female = read_csv(here("data/olympics_clean.csv")) %>%
-  filter(sex=="F") 
-
+olympics_female = read_csv(here("data/olympics.csv")) %>%
+  filter(sex=="F") =
 
 # (A) 95th percentile height is 186 cm for females
 perc95 = quantile(olympics_female$height, 0.95)
