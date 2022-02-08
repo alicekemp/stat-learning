@@ -87,36 +87,53 @@ gganimate = ggplot(ABIA, aes(x=delay_total, y=UniqueCarrier, fill = stat(x))) +
 animate(gganimate)
 ```
 
-## **2) Wrangling the Billboard Top 100**
-### **Part A: Ten most popular songs since 1958**
+## **2) Wrangling the Billboard Top 100** 
+The weekly Billboard Top 100 list has tracked the most popular songs and artists in the U.S. since 1958, compiling data points from radio airplays, audio sales, and streaming activity. 
+### **Part A**
+|    	|                 **Performer**               |             **Song**            	      | **Count (weeks)** |
+|----	|:-----------------------------------------:	|:-------------------------------------:	|:---------------:	|
+| 1  	| Imagine Dragons                           	| "Radioactive"                         	| 87              	|
+| 2  	| AWOLNATION                                	| "Sail"                                	| 79              	|
+| 3  	| Jason Mraz                                	| "I'm Yours"                           	| 76              	|
+| 4  	| The Weeknd                                	| "Blinding Lights"                     	| 76              	|
+| 5  	| LeAnn Rimes                               	| "How Do I Live"                       	| 69              	|
+| 6  	| LMFAO Featuring Lauren Bennett & GoonRock 	| "Party Rock Anthem"                   	| 68              	|
+| 7  	| OneRepublic                               	| "Counting Stars"                      	| 68              	|
+| 8  	| Adele                                     	| "Rolling In The Deep"                 	| 65              	|
+| 9  	| Jewel                                     	| "Foolish Games/You Were Meant For Me" 	| 65              	|
+| 10 	| Carrie Underwood                          	| "Before He Cheats"                    	| 64              	|
+*Caption:* Imagine Dragons' "Radioactive" is the most popular song with 87 total appearances on the Billboard Top 100 since its release in 2012, followed by AWOLNATION's 2011 hit "Sail" with a total of 79 weekly appearances. Jason Mraz's "I'm Yours", released in 2008, and The Weeknd's "Blinding Lights, recently released in 2020, tied for third place with 76 weekly appearances each.  
 ```{r billboard_a, echo = FALSE, message = FALSE}
 # clean data and filter 
 billboard = read_csv(here(("data/billboard.csv")),show_col_types = FALSE) %>%
   select(performer, song, year, week, week_position) %>%
-write_csv(here("data/billboard_clean.csv")) %>%
+  write_csv(here("data/billboard_clean.csv")) %>%
   group_by(performer, song) %>%
   filter(year >= 1958) %>%
   summarise(count = n()) %>%
   arrange(desc(count), .by_group = FALSE) 
 # table of top ten songs
 n = seq(1,10,1)
-data.frame(n,billboard[1:10,]) 
+billboard_topten = data.frame(n,billboard[1:10,]) 
+attach(billboard)
 ```
 
-### **Part B: Musical diversity of Top 100 over time**
-```{r billboard_b, echo=FALSE, warning=FALSE}
+### **Part B**
+Th musical diversity of the Billboard 100 has increased over the few last decades, last peaking in 1966 when 832 unique songs appeared on the list. Diversity then dropped into the early 2000's before rising again to reach 804 distinct appearances on the Billboard 100 in 2020.  
+```{r billboard_b, echo=FALSE, warning=FALSE, message = FALSE}
 billboard_unique = read_csv(here("data/billboard_clean.csv"),show_col_types = FALSE) %>%
   group_by(performer, song, year) %>%
   filter(year != 1958, year != 2021) %>%
   unite("performer_song", performer:song, sep = " - ", remove = TRUE) %>%
   summarize(
-            unique_songs = n_distinct(performer_song)) 
-
+            unique_songs = n_distinct(performer_song)) %>%
+  arrange(desc(unique_songs)) 
+attach(billboard_unique)
 ggplot(billboard_unique, aes(x=year, y=unique_songs)) + 
   geom_line(color = "mediumblue", alpha = 0.6, size = 1.0) + 
   ylab("unique songs") + 
   ggtitle('Unique Billboard Top 100 songs by year') + 
-  labs(caption = 'The number of unique songs on the Billboard Top 100 list peaked in the late 1960s, before dipping to a low in 2001. \n However, music diversity has risen again, with 2020 reaching 800 unique songs on the Top 100.') + 
+  labs(caption = 'The number of unique songs on the Billboard Top 100 list peaked in the late 1960s, before dipping to a low in 2001. \n However, music diversity has been on the rise again with 2020 yielding over 800 unique songs on the Top 100.') + 
   my_theme + 
   theme(
     plot.caption = element_text(hjust = 0))
