@@ -1,5 +1,6 @@
 ---
-title: "Homework-1"
+title: "Homework 1"
+subtitle: "ECO395M"
 author: "Alice Kemp"
 output: github_document
 ---
@@ -50,7 +51,7 @@ my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
         axis.title.y = element_text(margin = margin(r = 10), hjust = 1))
 ```
 
-## **1) Data visualization: flights at ABIA**
+## **1) Data visualization: Flights at ABIA**
 
 
 ```{r abia, echo = FALSE}
@@ -76,7 +77,7 @@ gganimate = ggplot(ABIA, aes(x=delay_total, y=UniqueCarrier, fill = stat(x))) +
   geom_density_ridges_gradient(rel_min_height = 0.01, scale = 2, show.legend = FALSE) +
   scale_fill_viridis(option = "plasma", alpha = 0.9, discrete = FALSE, direction= -1) + 
   xlim(-40,100) + 
-  transition_states(DayOfWeek, transition_length = 1, state_length = 2) + 
+  transition_states(DayOfWeek, transition_length = 2, state_length = 0) + 
   labs(
     title  = "ABIA Outbound Flights: Net delay by carrier",
     subtitle = "Day of Week: {closest_state}",
@@ -88,8 +89,9 @@ animate(gganimate)
 ```
 
 ## **2) Wrangling the Billboard Top 100** 
-The weekly Billboard Top 100 list has tracked the most popular songs and artists in the U.S. since 1958, compiling data points from radio airplays, audio sales, and streaming activity. 
-### **Part A**
+The weekly Billboard Top 100 list has tracked the most popular songs and artists in the U.S. since 1958, compiling data points from radio airplays, audio sales, and streaming activity.   
+### **Part A**  
+
 |    	|                 **Performer**               |             **Song**            	      | **Count (weeks)** |
 |----	|:-----------------------------------------:	|:-------------------------------------:	|:---------------:	|
 | 1  	| Imagine Dragons                           	| "Radioactive"                         	| 87              	|
@@ -101,8 +103,9 @@ The weekly Billboard Top 100 list has tracked the most popular songs and artists
 | 7  	| OneRepublic                               	| "Counting Stars"                      	| 68              	|
 | 8  	| Adele                                     	| "Rolling In The Deep"                 	| 65              	|
 | 9  	| Jewel                                     	| "Foolish Games/You Were Meant For Me" 	| 65              	|
-| 10 	| Carrie Underwood                          	| "Before He Cheats"                    	| 64              	|
-*Caption:* Imagine Dragons' "Radioactive" is the most popular song with 87 total appearances on the Billboard Top 100 since its release in 2012, followed by AWOLNATION's 2011 hit "Sail" with a total of 79 weekly appearances. Jason Mraz's "I'm Yours", released in 2008, and The Weeknd's "Blinding Lights, recently released in 2020, tied for third place with 76 weekly appearances each.  
+| 10 	| Carrie Underwood                          	| "Before He Cheats"                    	| 64              	
+|  
+*Caption:* Imagine Dragons' "Radioactive" is the most popular song with 87 total appearances on the Billboard Top 100 since its release in 2012, followed by AWOLNATION's 2011 hit "Sail" with a total of 79 weekly appearances. Jason Mraz's "I'm Yours", released in 2008, and The Weeknd's "Blinding Lights, recently released in 2020, tied for third place with 76 weekly appearances each.    
 ```{r billboard_a, echo = FALSE, message = FALSE}
 # clean data and filter 
 billboard = read_csv(here(("data/billboard.csv")),show_col_types = FALSE) %>%
@@ -140,7 +143,8 @@ ggplot(billboard_unique, aes(x=year, y=unique_songs)) +
 ```
 
 
-### **Part C: Artists with ten-week hits**
+### **Part C**
+There have been 19 artists who have had at least 30 songs appear on the Billboard Top 100 more than ten times since 1958. As of 2021, leading the lineup is Elton John with 52 songs followed by Madonna with 44 and Kenny Chesney with 42. 
 ```{r billboard_c, echo=FALSE, message = FALSE}
 read_csv(here("data/billboard_clean.csv"),show_col_types = FALSE) %>%
   group_by(performer, song) %>%
@@ -168,10 +172,12 @@ ggplot(aes(x=reorder(performer, +nsongs), y=nsongs)) +
 ## **3) Wrangling the Olympics**
 
 ### **Part A**
-The 95th percentile of female Olympic medalists in the top 20 sports between 1924 and 2016 is 186 cm. 
+The 95th percentile of female Olympic medalists in the top 20 sports between 1924 and 2016 is 186 cm.   
+
 |                    	| **95th Percentile** 	|
 |--------------------	|---------------------	|
 | Female Height (cm) 	| 186.0               	|
+
 ```{r olympics_a, echo=FALSE}
 olympics_female = read_csv(here("data/olympics_clean.csv"), show_col_types = FALSE) %>%
   select(id, sex, height, event, year) %>%
@@ -191,8 +197,9 @@ The greatest variation in female medalists' height occurs in Women's Coxed Fours
 | Rowing Women's Coxed Quadruple Sculls 	|          171.9          	|             9.2             	|
 | Rowing Women's Coxed Eights           	|          178.2          	|             8.7             	|
 | Swimming Women's 100 metres Butterfly 	|          173.2          	|             8.1             	|
+
 ```{r olympics_b, echo = FALSE}
-olympics_female %>%
+olympics_partb = olympics_female %>%
   group_by(event) %>%
   summarize(
     avg = mean(height),
@@ -200,7 +207,39 @@ olympics_female %>%
   arrange(desc(sd)) %>%
   top_n(5)
 ```
+
 ### **Part C**
+Looking at the average ages of Olympic swimmers over time, we observe that overall average age peaked in 1920 before falling until the 1976 Olympics. Since 1976, average age has steadily grown to reach 23.2 in 2016.  
+
+| **Year** 	| **Average Age** 	| **Difference** 	|
+|:--------:	|:---------------:	|:--------------:	|
+| 1900     	| 18.0            	| -              	|
+| 1904     	| 20.1            	| +2.1           	|
+| 1908     	| 22.0            	| +0.9           	|
+| 1912     	| 23.5            	| +1.5           	|
+| 1920     	| 26.0            	| +2.5           	|
+| 1924     	| 23.6            	| -2.4           	|
+| 1928     	| 23.5            	| -0.1           	|
+| 1932     	| 19.0            	| -4.5           	|
+| 1936     	| 21.0            	| +2.0           	|
+| 1948     	| 20.0            	| -1.0           	|
+| 1952     	| 20.1            	| +0.1           	|
+| 1956     	| 18.9            	| -1.2           	|
+| 1960     	| 18.6            	| -0.3           	|
+| 1964     	| 19.4            	| +0.8           	|
+| 1968     	| 19.2            	| -0.2           	|
+| 1972     	| 19.0            	| -0.2           	|
+| 1976     	| 18.5            	| -0.5           	|
+| 1980     	| 18.8            	| +0.3           	|
+| 1984     	| 19.8            	| +1.0           	|
+| 1988     	| 20.6            	| +0.8           	|
+| 1992     	| 21.0            	| +0.4           	|
+| 1996     	| 22.0            	| +1.0           	|
+| 2000     	| 22.5            	| +0.5           	|
+| 2004     	| 22.4            	| -0.1           	|
+| 2008     	| 22.9            	| +0.5           	|
+| 2012     	| 23.3            	| +0.4           	|
+| 2016     	| 23.2            	| -0.1           	|  
 
 ```{r olympics_c, echo = FALSE}
 # average age across genders
@@ -209,9 +248,7 @@ swim_avgage_df = data.frame(read_csv(here("data/olympics_clean.csv"), show_col_t
   group_by(year) %>%
   summarize(avg_age = mean(age)) %>%
   mutate(across(where(is.numeric), ~ round(., 1))))
-swim_avgage_df
 attach(swim_avgage_df)
-
 # split by gender
 olympics_ageyr = read_csv(here("data/olympics_clean.csv"),show_col_types = FALSE) %>%
   filter(sport == "Swimming") %>%
@@ -233,8 +270,8 @@ ggplot(data = olympics_ageyr, aes(x=year,y=avg_age, color = sex)) +
 
 
 ## **4) K-nearest neighbors**
-The 350 trim level yields a higher optimal value of k, equal to 32. This may be due to the fact that there is less variance in the data for 350 trim models than for 65 AMG models. Thus, the 350 KNN model can optimize with a higher value of k (more neighbors, but lower sd) to minimize error as compared to the KNN model for the 65 AMG cars.  
-```{r sclass}
+The 350 trim level yields a higher optimal value of k, equal to 32. This may be due to the fact that there is less variance in the data for 350 trim models than for 65 AMG models. Thus, the 350 KNN model can optimize with a higher value of k (more neighbors, but lower sd) to minimize error as compared to the KNN model for the 65 AMG cars.    
+```{r sclass, echo = FALSE, warning = FALSE, message=FALSE}
 # Trim level: 350 
 sclass = read.csv("/Users/alicekemp/statistical-learning/stat-learning/Homework-1/data/sclass.csv") %>%
   select(trim, mileage, price) %>%
