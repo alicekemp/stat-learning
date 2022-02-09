@@ -276,12 +276,12 @@ The 350 trim level yields a higher optimal value of k, equal to 32. This may be 
 sclass = read.csv("/Users/alicekemp/statistical-learning/stat-learning/Homework-1/data/sclass.csv") %>%
   select(trim, mileage, price) %>%
   filter(trim %in% c(350,"65 AMG"))
-
+attach(sclass)
 sclass350 = sclass %>%
   filter(trim==350)
-attach(sclass)
 
 # create train/test splits
+set.seed(123)
 sclass350_split = initial_split(sclass350, prop = 0.8)
 sclass350_train = training(sclass350_split)
 sclass350_test = testing(sclass350_split)
@@ -304,7 +304,7 @@ sclass65_test = testing(sclass65_split)
 
 rmse_out65 = foreach(i=2:100, .combine='c') %do% {
   knn_model = knnreg(price ~ mileage, data=sclass65_train, k = i)
-  modelr::rmse(knn_model, sclass65_test)} 
+  rmse(knn_model, sclass65_test)} 
 
 # plot K vs. RMSE for both trim levels
 k_vals = seq(2,100,1)
@@ -327,13 +327,14 @@ ggplot(df) +
 # find optimal K (minimum RMSE)
 optimal_k = df %>%
   select(k_vals, rmse_out350) %>%
-  arrange(rmse_out350)
+  arrange(rmse_out350) %>%
+  top_n(1)
 
 # attach predictions to the test df
-knn32 = knnreg(price ~ mileage, data=sclass350_train, k = 32)
+knn1 = knnreg(price ~ mileage, data=sclass350_train, k = 17)
 
 sclass350_test = sclass350_test %>%
-  mutate(price_pred = predict(knn32, sclass350_test))
+  mutate(price_pred = predict(knn1, sclass350_test))
 
 # plot data and KNN model fit 
 ggplot(data = sclass350_test) + 
@@ -342,21 +343,20 @@ ggplot(data = sclass350_test) +
   my_theme + 
   labs(
     title = "Mercedes S Class: Mileage vs. Price",
-    subtitle = "Trim level: 350 | KNN Model (K=32)")
+    subtitle = "Trim level: 350 | KNN Model (K=17)")
 
 #####
 # Trim level: 65 AMG
 #####
 # find optimal K (minimum RMSE) 
-optimal_k = df %>%
-  group_by(k_vals) %>%
-  arrange(rmse_out65) %>%
-  top_n(1)
+optimal_k2 = df %>%
+  select(k_vals, rmse_out65) %>%
+  arrange(rmse_out65)
 # attach predictions to the test df
-knn10 = knnreg(price ~ mileage, data=sclass65_train, k = 10)
+knn2 = knnreg(price ~ mileage, data=sclass65_train, k = 16)
 
 sclass65_test = sclass65_test %>%
-  mutate(price_pred = predict(knn10, sclass65_test))
+  mutate(price_pred = predict(knn2, sclass65_test))
 
 ggplot(data = sclass65_test) + 
   geom_point(mapping = aes(x =  mileage, y = price), alpha=0.2) + 
@@ -364,7 +364,7 @@ ggplot(data = sclass65_test) +
   my_theme + 
   labs(
     title = "Mercedes S Class: Mileage vs. Price",
-    subtitle = "Trim level: 65 AMG | KNN Model (K=10)") 
+    subtitle = "Trim level: 65 AMG | KNN Model (K=16)") 
 
 ```
 

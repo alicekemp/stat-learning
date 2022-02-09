@@ -2,7 +2,7 @@ Homework 1
 ================
 Alice Kemp
 
-## **1) Data visualization: flights at ABIA**
+## **1) Data visualization: Flights at ABIA**
 
 ![](Homework-1_files/figure-gfm/abia-1.gif)<!-- -->
 
