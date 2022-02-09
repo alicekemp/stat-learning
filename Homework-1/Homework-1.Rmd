@@ -77,7 +77,7 @@ gganimate = ggplot(ABIA, aes(x=delay_total, y=UniqueCarrier, fill = stat(x))) +
   geom_density_ridges_gradient(rel_min_height = 0.01, scale = 2, show.legend = FALSE) +
   scale_fill_viridis(option = "plasma", alpha = 0.9, discrete = FALSE, direction= -1) + 
   xlim(-40,100) + 
-  transition_states(DayOfWeek, transition_length = 2, state_length = 0) + 
+  transition_states(DayOfWeek, transition_length = 1, state_length = 1) + 
   labs(
     title  = "ABIA Outbound Flights: Net delay by carrier",
     subtitle = "Day of Week: {closest_state}",
