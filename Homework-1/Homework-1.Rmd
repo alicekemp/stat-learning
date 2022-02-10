@@ -314,7 +314,7 @@ ggplot(df) +
   geom_line(aes(x = k_vals, y = rmse_out65, color = "65 AMG"), size = 1.5, alpha = 0.8) + 
   scale_color_manual("",
                      breaks = c("350", "65 AMG"),
-                     values = c("darkorange2","violetred2")) + 
+                     values = c("darkorange2","orangered2")) + 
   my_theme + 
   xlab("K") + 
   ylab("RMSE") + 
@@ -337,9 +337,9 @@ sclass350_test = sclass350_test %>%
   mutate(price_pred = predict(knn1, sclass350_test))
 
 # plot data and KNN model fit 
-ggplot(data = sclass350_test) + 
-  geom_point(mapping = aes(x =  mileage, y = price), alpha=0.2) + 
-  geom_line(aes(x = mileage, y = price_pred), color='darkorange2', size=1.5) +
+ggplot(data = sclass350) + 
+  geom_point(aes(x =  mileage, y = price), alpha=0.2) + 
+  geom_line(data = sclass350_test, aes(x = mileage, y = price_pred), color='darkorange2', size=1.5) +
   my_theme + 
   labs(
     title = "Mercedes S Class: Mileage vs. Price",
@@ -358,9 +358,9 @@ knn2 = knnreg(price ~ mileage, data=sclass65_train, k = 16)
 sclass65_test = sclass65_test %>%
   mutate(price_pred = predict(knn2, sclass65_test))
 
-ggplot(data = sclass65_test) + 
-  geom_point(mapping = aes(x =  mileage, y = price), alpha=0.2) + 
-  geom_line(aes(x = mileage, y = price_pred), color='violetred2', size=1.5) +
+ggplot(data = sclass65) + 
+  geom_point(data = sclass65, aes(x =  mileage, y = price), alpha=0.2) +
+  geom_line(data = sclass65_test, aes(x = mileage, y = price_pred), color='orangered2', size=1.5) +
   my_theme + 
   labs(
     title = "Mercedes S Class: Mileage vs. Price",
