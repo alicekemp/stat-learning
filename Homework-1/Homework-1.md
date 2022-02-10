@@ -4,6 +4,16 @@ Alice Kemp
 
 ## **1) Data visualization: Flights at ABIA**
 
+Analyzing flight data from the ABIA airport in Austin, Texas, we
+investigate trends in airline consistency measured by the average net
+delay (arrival delay minus departure delay) by day of week. As observed
+in the figure below, the most consistent airlines were ExpressJet (XE),
+Southwest Airlines (WN), and American Airlines (AA). These airlines were
+the most unchanged across days and tended to have shorter tails in the
+positive net delay direction. On the other hand, the least consistent
+airlines included Atlantic Southeast Airlines (EV) and Northwest
+Airlines (NW), and Jetstream International (OH) which tended to have
+higher variation in net delays and larger right tails.
 ![](Homework-1_files/figure-gfm/abia-1.gif)<!-- -->
 
 ## **2) Wrangling the Billboard Top 100**
