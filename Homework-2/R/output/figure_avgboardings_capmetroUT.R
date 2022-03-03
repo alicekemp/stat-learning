@@ -9,4 +9,5 @@ ggplot(aes(x=hour_of_day,y=avg_boardings, color = month)) +
   facet_wrap(vars(day_of_week),nrow=2) + 
   scale_color_manual(values = c(plasma[7],plasma[5],plasma[3])) +
   my_theme
+
   

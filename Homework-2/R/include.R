@@ -3,6 +3,7 @@ if (!("librarian" %in% rownames(utils::installed.packages()))) {
 }
 librarian::shelf(
   tidyverse,
+  lubridate,
   dplyr,
   haven, 
   stargazer, 

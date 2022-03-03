@@ -1,0 +1,199 @@
+---
+title: "Homework 2"
+subtitle: "ECO395M"
+author: "Alice Kemp"
+date: "02/22/2022"
+output: github_document
+---
+
+```{r setup, include=FALSE, echo=False}
+knitr::opts_chunk$set(echo = FALSE)
+if (!("librarian" %in% rownames(utils::installed.packages()))) {
+  utils::install.packages("librarian")
+}
+librarian::shelf(
+  tidyverse,
+  dplyr,
+  mosaic,
+  haven, 
+  stargazer, 
+  RColorBrewer,
+  here,
+  ggmap,
+  scales, 
+  ggridges,
+  viridis,
+  gganimate, 
+  gifski, 
+  future, 
+  geosphere,
+  maps, 
+  airportr, 
+  kableExtra,
+  rsample,
+  caret,
+  modelr,
+  parallel,
+  foreach, 
+  glmnet, 
+  gmodels)
+## color palette brewing
+plasma = c("darkorange2", "coral2", "orangered2", "violetred2", "magenta4", "purple3", "mediumblue")
+## my theme
+
+my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
+  theme(panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold", size = rel(1.7)),
+        plot.subtitle = element_text(face = "plain", size = rel(1.0), color = "grey70"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey70", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(face = "bold", size = rel(1.1), hjust = 0),
+        axis.title = element_text(face = "bold"),
+        axis.title.x = element_text(margin = margin(t = 10), hjust = 0),
+        axis.title.y = element_text(margin = margin(r = 10), hjust = 1))
+
+my_scatter_theme = theme_gray(base_family = "Arial Narrow", base_size = 12) +
+  theme(
+        plot.title = element_text(face = "bold", size = rel(1.7)),
+        plot.subtitle = element_text(face = "plain", size = rel(1.0), color = "grey70"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey70", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"),
+        axis.title.x = element_text(margin = margin(t = 10), hjust = 0),
+        axis.title.y = element_text(margin = margin(r = 10), hjust = 1))
+here::i_am("R/include.R")
+```
+
+# Problem 1: Capmetro UT Visualization
+```{r}
+capmetro_UT = read_csv(here(("data/capmetro_UT_raw.csv"))) 
+capmetro_UT %>%
+  mutate(across(day_of_week, factor, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
+         across(month, factor, levels = c("Sep", "Oct", "Nov"))) %>%
+  group_by(hour_of_day, day_of_week, month) %>%
+  summarize(avg_boardings = mean(boarding)) %>%
+ggplot(aes(x=hour_of_day,y=avg_boardings, color = month)) + 
+  geom_line() + 
+  facet_wrap(vars(day_of_week),nrow=2) + 
+  scale_color_manual(values = c("steelblue1", "royalblue1", "mediumblue")) +
+  my_theme + 
+  ggtitle("Capmetro UT average boardings",
+          subtitle = "Passenger demand is highest on weekdays and peaks during the evening between 4:00 and 6:00 pm") + 
+  labs(
+    xlab("Hour of Day"),
+    ylab("Average Boardings")
+  )
+
+```
+
+
+```{r}
+capmetro_UT %>%
+  separate(col = timestamp, into = c("date", "hourwindow"), sep = "\\ ") %>%
+  group_by(temperature, weekend) %>%
+ggplot(aes(x=temperature,y=boarding, color = weekend)) + 
+  geom_point(alpha = 0.6, size = 0.9) + 
+  facet_wrap(vars(hour_of_day),nrow=4) + 
+  scale_color_manual(values=c("steelblue2","mediumblue")) + 
+  my_scatter_theme + 
+  ggtitle("Temperature vs. Capmetro UT boardings by hour",
+          subtitle = "Passenger demand is higher on weekdays, peaking during evening commute periods. \n Temperature appears to have little impact on number of passenger boardings") + 
+  labs(
+    x = "Temperature (°F)",
+    y = "Total Boardings"
+  )
+```
+
+# Problem 2: Saratoga house prices
+```{r}
+data(SaratogaHouses)
+# Split into training and testing sets
+	
+## LASSO Elastic Net Regression ##
+f = model.matrix(price ~ .^2, SaratogaHouses) # allow all interactions of features
+glm1_cv = cv.glmnet(f, y, nfolds = 5) # cv to find best lambda value
+glm1 = glmnet(f, y, alpha = 1, lambda = glm1_cv$lambda.min, data = SaratogaHouses) # best glm model 
+
+
+# Fit to the training data
+lm1 = lm(price ~ lotSize + bedrooms + bathrooms, data=SaratogaHouses)
+lm2 = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=SaratogaHouses)
+lm3 = lm(price ~ (. - pctCollege - sewer - waterfront - landValue - newConstruction)^2, data=SaratogaHouses)
+
+#coef(lm1) %>% round(0)
+#coef(lm2) %>% round(0)
+#coef(lm3) %>% round(0)
+#coef(glm1) %>% round(0)
+
+# Predictions out of sample
+# Root mean squared error
+rmse(lm1, saratoga_test)
+rmse(lm2, saratoga_test)
+rmse(lm3, saratoga_test)
+
+x_test = model.matrix(price ~ .^2, saratoga_test)
+glm_rmse = sqrt((assess.glmnet(glm1, newx = x_test, newy = saratoga_test$price))$mse)
+```
+
+# Problem 3
+```{r, echo = FALSE}
+german_credit = read_csv(here(("data/german_credit_raw.csv")))
+
+default_history = german_credit %>%
+    mutate(across(history, factor, levels = c("terrible", "poor", "good"))) %>%
+  group_by(history) %>%
+  summarize(prop = sum(Default)/300)
+
+
+ggplot(default_history, aes(x = history, y = prop)) + 
+  geom_col(fill = "mediumblue", alpha = 0.75) +
+  geom_text(aes(label = prop %>% round(2), vjust = 2.0), color = "white", family = "Arial Narrow", face = "bold") + 
+  my_theme + 
+  ggtitle("Credit history vs. probability of loan default in Germany",
+          subtitle = "Individuals with poor credit history are likely to default on their loans with <60% probability, compared to \n those with terrible (18%) and good (0.19%) credit")
+```
+
+```{r}
+glm = glm(Default ~ duration + amount + installment + age + history + purpose + foreign, family = "binomial"(link = 'logit'), data = german_credit)
+summary(glm)
+```
+
+# Problem 4: Children and hotel reservations
+## Model building
+```{r}
+hotels = read_csv(here(("data/hotels_dev_raw.csv")))
+
+set.seed(666)
+
+baseline1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, family = "binomial"(link = 'logit'), data = hotels)
+
+baseline2 = glm(children ~ . -arrival_date, family = "binomial"(link = 'logit'), data = hotels)
+
+hotels_feats = model.matrix(children ~ .^2, hotels) # allow all interactions of features
+hotels_glm_cv = cv.glmnet(hotels_feats, hotels$children, nfolds = 5) # cv to find best lambda 
+hotels_glm = glmnet(hotels_feats, hotels$children, alpha = 1, lambda = hotels_glm_cv$lambda.min, data = hotels) # best glm model 
+coef(hotels_glm)
+
+rmse(baseline1, hotels_test)
+rmse(baseline2, hotels_test)
+feat_test = model.matrix(children ~ .^2, hotels)
+hotels_glm_rmse = sqrt((assess.glmnet(hotels_glm, newx = feat_test, newy = hotels$children))$mse)
+hotels_glm_rmse
+
+```
+
+
+```{r}
+hotels_val = read_csv(here(("data/hotels_val_raw.csv")))
+
+```
+
+
+
+
+
+
+
+
