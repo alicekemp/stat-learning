@@ -1,53 +1,6 @@
 # Problem 1: Capmetro UT Visualization
 
-    capmetro_UT = read_csv(here(("data/capmetro_UT_raw.csv"))) 
-
-    ## Rows: 5824 Columns: 8
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ","
-    ## chr  (3): day_of_week, month, weekend
-    ## dbl  (4): boarding, alighting, temperature, hour_of_day
-    ## dttm (1): timestamp
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-    capmetro_UT %>%
-      mutate(across(day_of_week, factor, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
-             across(month, factor, levels = c("Sep", "Oct", "Nov"))) %>%
-      group_by(hour_of_day, day_of_week, month) %>%
-      summarize(avg_boardings = mean(boarding)) %>%
-    ggplot(aes(x=hour_of_day,y=avg_boardings, color = month)) + 
-      geom_line() + 
-      facet_wrap(vars(day_of_week),nrow=2) + 
-      scale_color_manual(values = c("steelblue1", "royalblue1", "mediumblue")) +
-      my_theme + 
-      ggtitle("Capmetro UT average boardings",
-              subtitle = "Passenger demand is highest on weekdays and peaks during the evening between 4:00 and 6:00 pm") + 
-      labs(
-        xlab("Hour of Day"),
-        ylab("Average Boardings")
-      )
-
-    ## `summarise()` has grouped output by 'hour_of_day', 'day_of_week'. You can
-    ## override using the `.groups` argument.
-
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-1-1.png)
-
-    capmetro_UT %>%
-      separate(col = timestamp, into = c("date", "hourwindow"), sep = "\\ ") %>%
-      group_by(temperature, weekend) %>%
-    ggplot(aes(x=temperature,y=boarding, color = weekend)) + 
-      geom_point(alpha = 0.6, size = 0.9) + 
-      facet_wrap(vars(hour_of_day),nrow=4) + 
-      scale_color_manual(values=c("steelblue2","mediumblue")) + 
-      my_scatter_theme + 
-      ggtitle("Temperature vs. Capmetro UT boardings by hour",
-              subtitle = "Passenger demand is higher on weekdays, peaking during evening commute periods. \n Temperature appears to have little impact on number of passenger boardings") + 
-      labs(
-        x = "Temperature (°F)",
-        y = "Total Boardings"
-      )
 
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-2-1.png)
 
@@ -157,9 +110,6 @@ of default, we recommend resampling the data to include a balanced panel
 of individuals across credit histories, or a larger random sample of
 loans irrespective of default status to gather data that is more
 representative of the population.
-
-    ## Warning: Ignoring unknown parameters: face
-
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-4-1.png)
 
     ## 
@@ -199,109 +149,38 @@ representative of the population.
 
 # Problem 4: Children and hotel reservations
 
-## Model building
+## Data
 
-    library(pROC)
+The data in this analysis includes 45,000 data points from reservations
+at a major U.S.-based hotel chain. The variable of interest that we are
+attempting to predict is whether or not a particular booking includes
+children, based on 21 features including hotel type, meal type, customer
+demographics, number of adults, repeated guests, and other reservation
+attributes.
 
-    ## Type 'citation("pROC")' for a citation.
+## Methodology & Evaluation
 
-    ## 
-    ## Attaching package: 'pROC'
-
-    ## The following object is masked from 'package:gmodels':
-    ## 
-    ##     ci
-
-    ## The following objects are masked from 'package:mosaic':
-    ## 
-    ##     cov, var
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     cov, smooth, var
-
-    hotels = read_csv(here(("data/hotels_dev_raw.csv")))
-
-    ## Rows: 45000 Columns: 22
-
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ","
-    ## chr   (9): hotel, meal, market_segment, distribution_channel, reserved_room_...
-    ## dbl  (12): lead_time, stays_in_weekend_nights, stays_in_week_nights, adults,...
-    ## date  (1): arrival_date
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-    set.seed(13)
-    hotels_split = initial_split(hotels, 0.8)
-    hotels_train = training(hotels_split)
-    hotels_test = testing(hotels_split)
-
-    baseline1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, family = "binomial"(link = 'logit'), data = hotels_train)
-
-    baseline2 = glm(children ~ . -arrival_date, family = "binomial"(link = 'logit'), data = hotels_train)
-
-    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-    x_train = model.matrix(children ~ .-1, data = hotels_train)
-    y_train = hotels_train$children
-    x_test = model.matrix(children ~ .-1, data = hotels_test)
-    y_test = hotels_test$children
-    lasso_cv = cv.glmnet(x_train, y_train, type.measure = "mse", alpha = 1, nfolds = 10, family = "binomial") 
-    lasso_predict = predict(lasso_cv, s = 'lambda.min', newx = x_test, alpha = 1, type = "response", family = "binomial"(link='logit'))
-    rmselasso = sqrt(mean((y_test-lasso_predict)^2)) 
-
-    rmse(baseline1, hotels_test)
+First, two baseline OLS models were fit to build a binomial logit
+regression predicting the probability that a guest booking includes at
+least one child, using training vs. testing splits to reduce
+overfitting. Then, a 10-fold cross validated LASSO regression was run on
+all features to identify the variable most significant in predicting the
+outcome probability of interest. The LASSO model performed the best out
+of the three models with a low RMSE of 0.23. A ROC curve was then
+constructed using the optimal LASSO model to model TFP vs. FPR across
+varying thresholds. The optimal threshold was t=0.074, yielding an AUC
+of 0.87. Next, an OLS model was fit to new, unseen hotel data using 20
+fold cross validation. The accuracy of the model’s predictions for each
+fold of approximately 250 bookings was calculated, then averaged across
+all folds for a final accuracy of approximately 71.68%.
 
     ## [1] 3.107264
 
-    rmse(baseline2, hotels_test)
-
     ## [1] 4.101296
-
-    rmselasso
 
     ## [1] 0.2267663
 
-    library(pROC)
-    proc = roc(y_test ~ lasso_predict, plot = TRUE, print.auc=TRUE, col = "mediumblue", lwd =4, main = "ROC Curve", print.thres = TRUE)
-
-    ## Setting levels: control = 0, case = 1
-
-    ## Warning in roc.default(response, predictors[, 1], ...): Deprecated use a matrix
-    ## as predictor. Unexpected results may be produced, please pass a numeric vector.
-
-    ## Setting direction: controls < cases
-
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-5-1.png)
-
-    ### Model Validation
-    hotels_val = read_csv(here(("data/hotels_val_raw.csv")))
-
-    ## Rows: 4999 Columns: 22
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ","
-    ## chr   (9): hotel, meal, market_segment, distribution_channel, reserved_room_...
-    ## dbl  (12): lead_time, stays_in_weekend_nights, stays_in_week_nights, adults,...
-    ## date  (1): arrival_date
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-    library(naivebayes)
-
-    ## naivebayes 0.9.7 loaded
-    ## 
-    ## Attaching package: 'naivebayes'
-    ## 
-    ## The following object is masked from 'package:data.table':
-    ## 
-    ##     tables
-
-    trctrl = trainControl(method = "cv", number = 20, savePredictions=TRUE)
-    nb_fit = train(factor(children) ~ market_segment + adults + customer_type + is_repeated_guest, data = hotels_val, method = "naive_bayes", trControl=trctrl, tuneLength = 0)
-    nb_fit
 
     ## Naive Bayes 
     ## 
@@ -324,18 +203,6 @@ representative of the population.
     ## Accuracy was used to select the optimal model using the largest value.
     ## The final values used for the model were laplace = 0, usekernel = TRUE
     ##  and adjust = 1.
-
-    pred = nb_fit$pred
-    pred$equal = ifelse(pred$pred == pred$obs, 1,0)
-    eachfold = pred %>%                                        
-      group_by(Resample) %>%                         
-      summarise_at(vars(equal),                     
-                   list(Accuracy = mean))  
-    avg_acc = mean(eachfold$Accuracy)
-    df = rbind(data.frame(eachfold), avg_acc)
-    df[21,1] = "Average"
-    colnames(df) = c("Fold", "Accuracy")
-    df
 
     ##       Fold  Accuracy
     ## 1   Fold01 0.7228916

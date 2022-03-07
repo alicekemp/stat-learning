@@ -81,10 +81,8 @@ ggplot(aes(x=hour_of_day,y=avg_boardings, color = month)) +
   my_theme + 
   ggtitle("Capmetro UT average boardings",
           subtitle = "Passenger demand is highest on weekdays and peaks during the evening between 4:00 and 6:00 pm") + 
-  labs(
-    xlab("Hour of Day"),
+    xlab("Hour of Day") + 
     ylab("Average Boardings")
-  )
 
 ```
 
@@ -238,9 +236,12 @@ summary(glm)
 
 
 # Problem 4: Children and hotel reservations
-## Model building
+## Data
+The data in this analysis includes 45,000 data points from reservations at a major U.S.-based hotel chain. The variable of interest that we are attempting to predict is whether or not a particular booking includes children, based on 21 features including hotel type, meal type, customer demographics, number of adults, repeated guests, and other reservation attributes. 
+
+## Methodology & Evaluation
+  First, two baseline OLS models were fit to build a binomial logit regression predicting the probability that a guest booking includes at least one child, using training vs. testing splits to reduce overfitting. Then, a 10-fold cross validated LASSO regression was run on all features to identify the variable most significant in predicting the outcome probability of interest. The LASSO model performed the best out of the three models with a low RMSE of 0.23. A ROC curve was then constructed using the optimal LASSO model to model TFP vs. FPR across varying thresholds. The optimal threshold was t=0.074, yielding an AUC of 0.87. Next, an OLS model was fit to new, unseen hotel data using 20 fold cross validation. The accuracy of the model's predictions for each fold of approximately 250 bookings was calculated, then averaged across all folds for a final accuracy of approximately 71.68%. 
 ```{r, echo = FALSE, message = FALSE, warning=FALSE}
-library(pROC)
 hotels = read_csv(here(("data/hotels_dev_raw.csv")), show_col_types = FALSE)
 set.seed(13)
 hotels_split = initial_split(hotels, 0.8)
