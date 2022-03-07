@@ -19,6 +19,12 @@ better compare performance across models, the categorical variables were
 converted to binary dummy variables. The data was then normalized in
 order to build the K-nearest neighbors model.
 
+    ##                 rmse
+    ## rmse_med   0.7036676
+    ## rmse_big   0.6489058
+    ## rmse_lasso 0.5537551
+    ## rmse_knn   0.6448680
+
 ## Methodology
 
 To analyze the effects of house features on a home’s sale price, four
@@ -62,12 +68,6 @@ most important interactions include septic sewer systems based on
 property age, land value based on new construction status, and living
 area based on central air status.
 
-    ##                 rmse
-    ## rmse_med   0.7036676
-    ## rmse_big   0.6489058
-    ## rmse_lasso 0.5537551
-    ## rmse_knn   0.6448680
-
 # Problem 3: Classification and retrospective sampling
 
 ## Data
@@ -83,33 +83,6 @@ loan purpose, and a dummy variable for foreign workers. In this
 analysis, we attempt to predict a consumer’s probability of default
 based on features deemed statistically significant.
 
-## Methodology
-
-The data was grouped by credit history, with three bins diving consumers
-by “terrible”, “poor”, and “good” prior credit history. Then,
-probability of default was calculated for each group by summing the
-number of defaulted loans and dividing by the number of consumers per
-credit group. From the figure shown, we observe that individuals with
-good credit history have a high probability of defaulting on a loan at
-approximately 60%, compared to 32% for consumers with “poor” credit and
-18% for “terrible” credit history.
-
-## Evalutation
-
-Looking at the above probabilities, it is clear that the method of
-retrospective sampling may have introduced some bias in the data
-analyzed in this report. Upon closer investigation, we find that
-consumers with “good” credit account for only 9% of the individuals
-included in the study, while those with “poor” and “terrible” credit
-make up 62% and 29%, respectively. Therefore, we observe evidence of
-sampling selection bias in the data points included in this analysis,
-with a potentially unrepresentative sample fo defaults from “good”
-credit individuals than would appear in a random sample. To improve this
-analysis’ predictive power in predicting a bank customer’s probability
-of default, we recommend resampling the data to include a balanced panel
-of individuals across credit histories, or a larger random sample of
-loans irrespective of default status to gather data that is more
-representative of the population.
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-4-1.png)
 
     ## 
@@ -147,6 +120,34 @@ representative of the population.
     ## 
     ## Number of Fisher Scoring iterations: 4
 
+## Methodology
+
+The data was grouped by credit history, with three bins diving consumers
+by “terrible”, “poor”, and “good” prior credit history. Then,
+probability of default was calculated for each group by summing the
+number of defaulted loans and dividing by the number of consumers per
+credit group. From the figure shown, we observe that individuals with
+good credit history have a high probability of defaulting on a loan at
+approximately 60%, compared to 32% for consumers with “poor” credit and
+18% for “terrible” credit history.
+
+## Evaluation
+
+Looking at the above probabilities, it is clear that the method of
+retrospective sampling may have introduced some bias in the data
+analyzed in this report. Upon closer investigation, we find that
+consumers with “good” credit account for only 9% of the individuals
+included in the study, while those with “poor” and “terrible” credit
+make up 62% and 29%, respectively. Therefore, we observe evidence of
+sampling selection bias in the data points included in this analysis,
+with a potentially unrepresentative sample fo defaults from “good”
+credit individuals than would appear in a random sample. To improve this
+analysis’ predictive power in predicting a bank customer’s probability
+of default, we recommend resampling the data to include a balanced panel
+of individuals across credit histories, or a larger random sample of
+loans irrespective of default status to gather data that is more
+representative of the population.
+
 # Problem 4: Children and hotel reservations
 
 ## Data
@@ -158,27 +159,10 @@ children, based on 21 features including hotel type, meal type, customer
 demographics, number of adults, repeated guests, and other reservation
 attributes.
 
-## Methodology & Evaluation
-
-First, two baseline OLS models were fit to build a binomial logit
-regression predicting the probability that a guest booking includes at
-least one child, using training vs. testing splits to reduce
-overfitting. Then, a 10-fold cross validated LASSO regression was run on
-all features to identify the variable most significant in predicting the
-outcome probability of interest. The LASSO model performed the best out
-of the three models with a low RMSE of 0.23. A ROC curve was then
-constructed using the optimal LASSO model to model TFP vs. FPR across
-varying thresholds. The optimal threshold was t=0.074, yielding an AUC
-of 0.87. Next, an OLS model was fit to new, unseen hotel data using 20
-fold cross validation. The accuracy of the model’s predictions for each
-fold of approximately 250 bookings was calculated, then averaged across
-all folds for a final accuracy of approximately 71.68%.
-
-    ## [1] 3.107264
-
-    ## [1] 4.101296
-
-    ## [1] 0.2267663
+    ##            rmse
+    ## ols1  3.1072638
+    ## ols2  4.1012957
+    ## lasso 0.2267663
 
 ![](Homework-2_files/figure-markdown_strict/unnamed-chunk-5-1.png)
 
@@ -226,3 +210,19 @@ all folds for a final accuracy of approximately 71.68%.
     ## 19  Fold19 0.7120000
     ## 20  Fold20 0.6920000
     ## 21 Average 0.7168497
+
+## Methodology & Evaluation
+
+First, two baseline OLS models were fit to build a binomial logit
+regression predicting the probability that a guest booking includes at
+least one child, using training vs. testing splits to reduce
+overfitting. Then, a 10-fold cross validated LASSO regression was run on
+all features to identify the variable most significant in predicting the
+outcome probability of interest. The LASSO model performed the best out
+of the three models with a low RMSE of 0.23. A ROC curve was then
+constructed using the optimal LASSO model to model TFP vs. FPR across
+varying thresholds. The optimal threshold was t=0.074, yielding an AUC
+of 0.87. Next, an OLS model was fit to new, unseen hotel data using 20
+fold cross validation. The accuracy of the model’s predictions for each
+fold of approximately 250 bookings was calculated, then averaged across
+all folds for a final accuracy of approximately 71.68%.
