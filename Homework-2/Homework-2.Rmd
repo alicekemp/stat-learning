@@ -3,15 +3,15 @@ title: "Homework 2"
 subtitle: "ECO395M"
 author: "Alice Kemp"
 date: "02/22/2022"
-output: github_document
+output: md_document
 ---
 
-```{r setup, include=FALSE, echo=False}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, include=FALSE, echo=FALSE}
 if (!("librarian" %in% rownames(utils::installed.packages()))) {
   utils::install.packages("librarian")
 }
 librarian::shelf(
+  ROSE,
   tidyverse,
   dplyr,
   mosaic,
@@ -67,8 +67,8 @@ here::i_am("R/include.R")
 ```
 
 # Problem 1: Capmetro UT Visualization
-```{r}
-capmetro_UT = read_csv(here(("data/capmetro_UT_raw.csv"))) 
+```{r,echo = FALSE, message = FALSE, warning=FALSE}
+capmetro_UT = read_csv(here(("data/capmetro_UT_raw.csv")), show_col_types = FALSE) 
 capmetro_UT %>%
   mutate(across(day_of_week, factor, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
          across(month, factor, levels = c("Sep", "Oct", "Nov"))) %>%
@@ -89,7 +89,7 @@ ggplot(aes(x=hour_of_day,y=avg_boardings, color = month)) +
 ```
 
 
-```{r}
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
 capmetro_UT %>%
   separate(col = timestamp, into = c("date", "hourwindow"), sep = "\\ ") %>%
   group_by(temperature, weekend) %>%
@@ -107,88 +107,186 @@ ggplot(aes(x=temperature,y=boarding, color = weekend)) +
 ```
 
 # Problem 2: Saratoga house prices
-```{r}
+## Data
+  The dataset used in this report covers housing prices and 15 characteristics for over 1,700 houses in the Saratoga County, Florida residential market in the year 2006. Characteristics include lot size, age, land value, living area, percent of neighborhood that graduated college, bedrooms, fireplaces, bathrooms, rooms, type of heating, type of fuel used for heating, type of sewer system, and whether the property was waterfront, new construction, and had central air conditioning. To better compare performance across models, the categorical variables were converted to binary dummy variables. The data was then normalized in order to build the K-nearest neighbors model. 
+
+## Methodology
+  To analyze the effects of house features on a home's sale price, four models of varying complexity were created. The first two baseline models utilized simple linear OLS regressions of price on a selection of home features, with the "big" OLS model including interaction effects of all included features. The data was also randomized into train/test splits with an 80% training proportion to build and evaluate model performance. The next model utilized a LASSO model for feature selection. All features and their interactions were included, and k-fold cross validation (K = 10) was performed to minimize the risk of overfitting the sample data. Finally, a K-nearest neighbors model was run and iterated over 100 values of K to identify the final model. This KNN model also iterated over K-10 folds for cross validation purposes.    
+  
+## Technical Notes
+  To compare out-of-sample performance across models, the RMSE was calculated for each regression for the test set and an average RMSE was calculated as the mean out-of-sample RMSE across folds for the cross-validated LASSO and KNN models. For the two baseline OLS models, the big model which included most interaction terms performed better than the medium model with an out-of-sample RMSE of approximately 0.649 compared to 0.704. The cross-validated LASSO regression outperformed all other models, yielding an out-of-sample RMSE of approximately 0.554. In the LASSO model, coefficient shrinkage was performed on all possible interactions of all factor levels and features, while the KNN model utilized group patterns in the training data to classify the test data. 
+  
+## Conclusion
+Overall, the cross-validated LASSO model performed the best out of the four regressions, with normalized out-of-sample error of about 0.55. To best predict housing prices based on the variables included in this study, we recommend using the LASSO model. This model not only has a lower error than the other models, but also identifies the most important features and interactions that impact property prices. The features identified in this model are lot size, land value, living area, number of bathrooms, waterfront property, and central air systems. The most important interactions include septic sewer systems based on property age, land value based on new construction status, and living area based on central air status. 
+   
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+library(glmnet)
+library(data.table)
+library(tidyverse)
+library(ggplot2)
+library(caret)
+library(modelr)
+library(rsample)
+library(foreach)
+library(parallel)
+library(purrr)
 data(SaratogaHouses)
-# Split into training and testing sets
-	
-## LASSO Elastic Net Regression ##
-f = model.matrix(price ~ .^2, SaratogaHouses) # allow all interactions of features
-glm1_cv = cv.glmnet(f, y, nfolds = 5) # cv to find best lambda value
-glm1 = glmnet(f, y, alpha = 1, lambda = glm1_cv$lambda.min, data = SaratogaHouses) # best glm model 
 
+# normalize data and create dummies
+saratoga_norm = fastDummies::dummy_cols(SaratogaHouses, select_columns = c("heating", "fuel", "sewer"))
+saratoga_norm = saratoga_norm %>%
+  select(-c("heating", "fuel", "sewer")) %>%
+  rename(heating_hotair = `heating_hot air`,
+        heating_hotwatersteam = `heating_hot water/steam`,
+        sewer_publiccommercial = `sewer_public/commercial`) %>%
+  mutate(
+    waterfront = ifelse(waterfront == "Yes",1,0),
+    newConstruction = ifelse(newConstruction == "Yes",1,0),
+    centralAir = ifelse(centralAir == "Yes",1,0)
+  )
+normalize = function(x){
+  output = (x - mean(x))/ sd(x)
+  return(output)
+}
 
-# Fit to the training data
-lm1 = lm(price ~ lotSize + bedrooms + bathrooms, data=SaratogaHouses)
-lm2 = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=SaratogaHouses)
-lm3 = lm(price ~ (. - pctCollege - sewer - waterfront - landValue - newConstruction)^2, data=SaratogaHouses)
+for(col.i in 1:ncol(saratoga_norm)){
+  saratoga_norm[,col.i] = normalize(saratoga_norm[,col.i])
+}
 
-#coef(lm1) %>% round(0)
-#coef(lm2) %>% round(0)
-#coef(lm3) %>% round(0)
-#coef(glm1) %>% round(0)
+## Baseline OLS Models
+set.seed(5)
+saratoga_split = initial_split(saratoga_norm, 0.8)
+saratoga_train = training(saratoga_split)
+saratoga_test = testing(saratoga_split)
 
-# Predictions out of sample
-# Root mean squared error
-rmse(lm1, saratoga_test)
-rmse(lm2, saratoga_test)
-rmse(lm3, saratoga_test)
+lm_medium = lm(price ~ lotSize + age + livingArea + pctCollege + bedrooms + fireplaces + bathrooms + rooms + heating_hotair + heating_hotwatersteam + heating_electric + fuel_gas + centralAir + fuel_electric + fuel_oil + sewer_septic + sewer_publiccommercial + sewer_none, data=saratoga_train)
 
-x_test = model.matrix(price ~ .^2, saratoga_test)
-glm_rmse = sqrt((assess.glmnet(glm1, newx = x_test, newy = saratoga_test$price))$mse)
+lm_big = lm(price ~ (lotSize + age + livingArea + pctCollege + bedrooms + fireplaces + bathrooms + rooms + heating_hotair + heating_hotwatersteam + heating_electric + fuel_gas + centralAir + fuel_electric + fuel_oil + sewer_septic + sewer_publiccommercial + sewer_none + landValue  + newConstruction)^2, data= saratoga_train)
+rmse_med = rmse(lm_medium, saratoga_test)
+rmse_big = rmse(lm_big, saratoga_test)
+  
+## CV LASSO Regression ##
+listx = list()
+for(iter in 1:5){
+  set.seed(10)
+  saratoga_split = initial_split(saratoga_norm, 0.8)
+  saratoga_train = training(saratoga_split)
+  saratoga_test = testing(saratoga_split)
+  
+  xtrain = model.matrix(price ~ .^2, saratoga_train) # include all interactions
+  ytrain = saratoga_train$price
+  xtest = model.matrix(price ~ .^2, saratoga_test)
+  ytest = saratoga_test$price
+  
+  glmnet_cv = cv.glmnet(xtrain, ytrain, type.measure = "mse", alpha = 1, nfolds = 5) #find best lambda
+  lasso_pred = predict(glmnet_cv, s=glmnet_cv$lambda.min, newx=xtest) # predicted vals 
+  rmselasso = sqrt(mean((ytest-lasso_pred)^2)) 
+  
+  listx[[iter]] = data.frame(rmselasso = rmselasso)
+}   
+
+## K-fold CV KNN Model ##
+# create model over 100 values of k, CV with 10 folds
+K_folds = 5
+saratoga_folds = crossv_kfold(saratoga_norm, k=K_folds)
+k_grid = c(1:100)
+cv_grid = foreach(k = k_grid, .combine='rbind') %do% {
+  set.seed(10)
+  models = purrr::map(saratoga_folds$train, ~ knnreg(price ~ ., data = ., k=k, use.all=FALSE))
+  errs = map2_dbl(models, saratoga_folds$test, modelr::rmse)
+  c(k=k, err = mean(errs), std_err = sd(errs)/sqrt(K_folds))
+} %>% as.data.frame
+
+k_val = as.integer(which.min(cv_grid$err)) # value of k with lowest rmse
+rmse_knn = cv_grid$err[k_val] # store rmse 
+
+## Compare RMSE across models
+lasso_results = rbindlist(listx) 
+rmse_lasso = colMeans(lasso_results)
+rmse_compare = data.frame(rbind(rmse_med, rmse_big, rmse_lasso, rmse_knn))
+colnames(rmse_compare) = "rmse"
+format(rmse_compare, scientific = FALSE)
 ```
 
-# Problem 3
-```{r, echo = FALSE}
-german_credit = read_csv(here(("data/german_credit_raw.csv")))
+# Problem 3: Classification and retrospective sampling
+## Data 
+This analysis investigates credit default history of 1,000 customers of a German bank. The data was sampled retrospectively, with the relatively small sample of defaulted loans matched with a similar set of loans that did not default. This sampling resulted in an outsized representation of defaults relative to a random sample of the bank's population of loans. Variables of interest studied in this analysis include loan duration, loan amount, installment amount, consumer age, consumer credit history, loan purpose, and a dummy variable for foreign workers. In this analysis, we attempt to predict a consumer's probability of default based on features deemed statistically significant.
+
+## Methodology
+The data was grouped by credit history, with three bins diving consumers by "terrible", "poor", and "good" prior credit history. Then, probability of default was calculated for each group by summing the number of defaulted loans and dividing by the number of consumers per credit group. From the figure shown, we observe that individuals with good credit history have a high probability of defaulting on a loan at approximately 60%, compared to 32% for consumers with "poor" credit and 18% for "terrible" credit history. 
+
+## Evalutation
+Looking at the above probabilities, it is clear that the method of retrospective sampling may have introduced some bias in the data analyzed in this report. Upon closer investigation, we find that consumers with "good" credit account for only 9% of the individuals included in the study, while those with "poor" and "terrible" credit make up 62% and 29%, respectively. Therefore, we observe evidence of sampling selection bias in the data points included in this analysis, with a potentially unrepresentative sample fo defaults from "good" credit individuals than would appear in a random sample. To improve this analysis' predictive power in predicting a bank customer's probability of default, we recommend resampling the data to include a balanced panel of individuals across credit histories, or a larger random sample of loans irrespective of default status to gather data that is more representative of the population. 
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+german_credit = read_csv(here(("data/german_credit_raw.csv")), show_col_types = FALSE)
 
 default_history = german_credit %>%
-    mutate(across(history, factor, levels = c("terrible", "poor", "good"))) %>%
+  mutate(across(history, factor, levels = c("terrible", "poor", "good"))) %>%
   group_by(history) %>%
-  summarize(prop = sum(Default)/300)
-
-
-ggplot(default_history, aes(x = history, y = prop)) + 
+  summarize(prob_default = sum(Default)/n(), 
+            n = n())
+ggplot(default_history, aes(x = history, y = prob_default)) + 
   geom_col(fill = "mediumblue", alpha = 0.75) +
-  geom_text(aes(label = prop %>% round(2), vjust = 2.0), color = "white", family = "Arial Narrow", face = "bold") + 
+  geom_text(aes(label = prob_default %>% round(2), vjust = 2.0), color = "white", family = "Arial Narrow", face = "bold") + 
   my_theme + 
   ggtitle("Credit history vs. probability of loan default in Germany",
           subtitle = "Individuals with poor credit history are likely to default on their loans with <60% probability, compared to \n those with terrible (18%) and good (0.19%) credit")
-```
 
-```{r}
 glm = glm(Default ~ duration + amount + installment + age + history + purpose + foreign, family = "binomial"(link = 'logit'), data = german_credit)
 summary(glm)
 ```
 
+
 # Problem 4: Children and hotel reservations
 ## Model building
-```{r}
-hotels = read_csv(here(("data/hotels_dev_raw.csv")))
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+library(pROC)
+hotels = read_csv(here(("data/hotels_dev_raw.csv")), show_col_types = FALSE)
+set.seed(13)
+hotels_split = initial_split(hotels, 0.8)
+hotels_train = training(hotels_split)
+hotels_test = testing(hotels_split)
 
-set.seed(666)
+baseline1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, family = "binomial"(link = 'logit'), data = hotels_train)
 
-baseline1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, family = "binomial"(link = 'logit'), data = hotels)
+baseline2 = glm(children ~ . -arrival_date, family = "binomial"(link = 'logit'), data = hotels_train)
 
-baseline2 = glm(children ~ . -arrival_date, family = "binomial"(link = 'logit'), data = hotels)
-
-hotels_feats = model.matrix(children ~ .^2, hotels) # allow all interactions of features
-hotels_glm_cv = cv.glmnet(hotels_feats, hotels$children, nfolds = 5) # cv to find best lambda 
-hotels_glm = glmnet(hotels_feats, hotels$children, alpha = 1, lambda = hotels_glm_cv$lambda.min, data = hotels) # best glm model 
-coef(hotels_glm)
+x_train = model.matrix(children ~ .-1, data = hotels_train)
+y_train = hotels_train$children
+x_test = model.matrix(children ~ .-1, data = hotels_test)
+y_test = hotels_test$children
+lasso_cv = cv.glmnet(x_train, y_train, type.measure = "mse", alpha = 1, nfolds = 10, family = "binomial") 
+lasso_predict = predict(lasso_cv, s = 'lambda.min', newx = x_test, alpha = 1, type = "response", family = "binomial"(link='logit'))
+rmselasso = sqrt(mean((y_test-lasso_predict)^2)) 
 
 rmse(baseline1, hotels_test)
 rmse(baseline2, hotels_test)
-feat_test = model.matrix(children ~ .^2, hotels)
-hotels_glm_rmse = sqrt((assess.glmnet(hotels_glm, newx = feat_test, newy = hotels$children))$mse)
-hotels_glm_rmse
+rmselasso
 
-```
+library(pROC)
+proc = roc(y_test ~ lasso_predict, plot = TRUE, print.auc=TRUE, col = "mediumblue", lwd =4, main = "ROC Curve", print.thres = TRUE)
 
 
-```{r}
+### Model Validation
 hotels_val = read_csv(here(("data/hotels_val_raw.csv")))
-
+library(naivebayes)
+trctrl = trainControl(method = "cv", number = 20, savePredictions=TRUE)
+nb_fit = train(factor(children) ~ market_segment + adults + customer_type + is_repeated_guest, data = hotels_val, method = "naive_bayes", trControl=trctrl, tuneLength = 0)
+nb_fit
+pred = nb_fit$pred
+pred$equal = ifelse(pred$pred == pred$obs, 1,0)
+eachfold = pred %>%                                        
+  group_by(Resample) %>%                         
+  summarise_at(vars(equal),                     
+               list(Accuracy = mean))  
+avg_acc = mean(eachfold$Accuracy)
+df = rbind(data.frame(eachfold), avg_acc)
+df[21,1] = "Average"
+colnames(df) = c("Fold", "Accuracy")
+df
 ```
+
+
 
 
 
