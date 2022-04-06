@@ -1,0 +1,365 @@
+---
+title: "Exercises-3"
+author: "Alice Kemp"
+date: '2022-03-23'
+output: github_document
+---
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+if (!("librarian" %in% rownames(utils::installed.packages()))) {
+  utils::install.packages("librarian")}
+librarian::shelf(tidyverse, haven, mosaic, foreach, stargazer, rpart, rpart.plot, caret, dplyr, mosaic, here, rsample, modelr, purrr, randomForest, gbm, pdp, clusterR, cluster, clue, factoextra, lme4, viridis, ggspatial, basemaps, sf, rgeos, maptools, fdm2id, ggmap, scales, vip, kable, kableExtra)
+
+my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
+  theme(panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold", size = rel(1.5)),
+        plot.subtitle = element_text(face = "plain", size = rel(1.0), color = "grey60"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey70", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(face = "bold", size = rel(1.1), hjust = 0),
+        axis.title = element_text(face = "bold"))
+
+my_scatter_theme = theme_gray(base_family = "Arial Narrow", base_size = 12) +
+  theme(
+        plot.title = element_text(face = "bold", size = rel(1.5)),
+        plot.subtitle = element_text(face = "plain", size = rel(0.8), color = "grey70"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey70", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"))
+
+my_scatter_theme2 = theme_gray(base_family = "Arial Narrow", base_size = 12) +
+  theme(
+        plot.title = element_text(face = "bold", size = rel(1.5), color = "white"),
+        plot.subtitle = element_text(face = "plain", size = rel(0.8), color = "white"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "white", hjust = 0),
+        legend.title = element_text(face = "bold", color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.key = element_blank(),
+        axis.title = element_text(face = "bold", color = "white"),
+        axis.line.x.bottom = element_line(color="white", size = 0.3),
+        axis.line.y.left =element_line(color="white", size = 0.3),
+        axis.text = element_text(color="white"),
+        panel.background = element_rect(fill = '#444569', color = "#444569"),
+        legend.background = element_rect(fill = '#444569', color = "#444569" ),
+        plot.background = element_rect(fill = '#444569', color = "#444569"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+        
+```
+
+## What Causes What: The Effect of Police on Crime
+
+1. *Why can’t I just get data from a few different cities and run the regression of “Crime” on “Police” to understand how more cops in the streets affect crime? (“Crime” refers to some measure of crime rate and “Police” measures the number of cops in a city.)*  
+  If you run a simple regression of "crime" on "police, you will not be controlling for the fact that cities with naturally higher crime rates tend to hire more police. Thus, you would need to control for this by using an instrumental variable or find an example where the amount of police dispatched in a day is independent of the level of criminal activity occurring. 
+
+2. *How were the researchers from UPenn able to isolate this effect? Briefly describe their approach and discuss their result in the “Table 2” below, from the researchers' paper.* 
+  Researchers from UPenn were able to isolate the effect of amount of police on criminal activity by finding an example where there was a high level of police on the streets unrelated to actual criminal activity - the terrorism alert system in D.C. that dispatched police based on the threat of terrorism, unrelated to the current level of street crime. In this example, researchers sought to discern what happens to street crime on days when the terror alert system was orange (moderate level). On these days, they found that crime rates decreased overall, however, a potential confounding issue was if this decline was simply due to fewer criminals and victims being out on the streets during these moderate to high terrorism threat levels. On orange alert days, daily crime rates were estimated to be -7.316% lower on average, ceteris paribus, than on low or no alert days. After controlling for a possible change in crime derived from individuals staying home on high alert days through metro ridership, daily crime rates were estimated to be -6.046% lower on average on high alert days, ceteris paribus. 
+
+3. *Why did they have to control for Metro ridership? What was that trying to capture?*    
+  A potential confounding issue was if the decline in crime was simply due to fewer criminals and victims being out on the streets during these moderate to high terrorism threat levels. Thus, controlling for Metro ridership, which was normal during these times, mitigated this issue. 
+
+4. *Below I am showing you "Table 4" from the researchers' paper. Just focus on the first column of the table. Can you describe the model being estimated here? What is the conclusion?*  
+  The model being estimated is the reduction in crime on high alert days in District 1, containing D.C.'s National Mall. The researchers found that on average, there were 2.62 fewer crimes per day on all else held fixed, in District 1 han in other districts. Other districts show on average a reduction in crimes by 0.571 per day, ceteris paribus, however, this result is not statistically significant.  Overall, there is a baseline -11.058 crime reduction on high alert days across all districts with Metro ridership being 2.477% higher on high alert days. 
+
+
+## Tree Modeling: Dengue Cases
+
+```{r dengue, echo = FALSE, warning = FALSE}
+dengue = read_csv(here(("data/dengue.csv")), na = "NA", show_col_types = FALSE)
+dengue = na.omit(dengue)
+
+# create train test splits
+set.seed(16)
+dengue_split = initial_split(dengue, 0.8)
+dengue_train = training(dengue_split)
+dengue_test = testing(dengue_split)
+
+# CART model
+dengue_tree = rpart(total_cases ~ city + season + specific_humidity + tdtr_k + precipitation_amt + avg_temp_k, data = dengue_train, control = rpart.control(cp = 0.0001))
+best_cp = dengue_tree$cptable[which.min(dengue_tree$cptable[,"xerror"]),"CP"] # find best cp
+tree_pruned = prune(dengue_tree, cp = best_cp) # prune tree 
+par(xpd=TRUE)
+prp(tree_pruned, faclen = 0, cex = 0.8, box.palette = "auto", extra = 100)
+yhat_tree = predict(dengue_tree, newdata = dengue_test)
+rmse_tree = sqrt(mean((yhat_tree - dengue_test$total_cases)^2))
+
+# Random forest model
+dengue_forest = randomForest(total_cases ~ city + season + specific_humidity + tdtr_k + precipitation_amt + avg_temp_k, data = dengue_train, na.action = na.omit, mtry = 6, ntree=100)
+yhat_forest = predict(dengue_forest, newdata = dengue_test)
+yhat_forest = na.omit(yhat_forest)
+dengue_test = dengue_test[-c(31,291), ] # NA's in predict set, removed i-th rows from test set
+rmse_forest = sqrt(mean((yhat_forest - dengue_test$total_cases)^2))
+
+# Gradient-boosted trees
+boost_dengue = gbm(total_cases ~ as.factor(city) + as.factor(season) + specific_humidity + tdtr_k + precipitation_amt + avg_temp_k, data=dengue_train, n.trees=500, shrinkage=.05)
+yhat_boost = predict(boost_dengue, newdata = dengue_test, n.trees=500)
+rmse_boost = sqrt(mean((yhat_boost - dengue_test$total_cases)^2))
+
+# consolidate rmse's to one table
+rmse = data.frame(rbind(rmse_tree, rmse_forest, rmse_boost))
+colnames(rmse) = c("RMSE")
+rownames(rmse) = c("Decision Tree", "Random Forest", "Gradient-Boosted Trees")
+kable(rmse, digits = 2, caption = "Table 1.1: Model RMSE")
+
+# Partial dependence plots for RF
+# specific humidity 
+partial(dengue_forest, pred.var = "specific_humidity", plot = TRUE,
+              plot.engine = "ggplot2") + 
+  my_theme +
+  ggtitle("Partial Dependence Plot of Specific Humidity") + 
+  labs(caption = "Caption: The effect of air humidity on predicting total cases of Dengue fever is roughly exponential, with the marginal effect of a one g/kg increase in humidity \n having an increasing effect on predicted cases, particularly when humidity exceeds 18 g/kg.") + 
+  xlab("Specific Humidity (g/kg)") + 
+  ylab("Predicted Cases")
+
+# Precipation
+partial(dengue_forest, pred.var = "precipitation_amt", plot = TRUE,
+              plot.engine = "ggplot2") + 
+  my_theme +
+  ggtitle("Partial Dependence Plot of Precipitation") + 
+  labs(caption = "Caption: The effect of precipitation on predicting total cases of Dengue fever is roughly exponential, with the marginal effect of a one millimeter increase in \n precipitation causing a rise in predicted cases, until precipitation reaches 200 mm when the effect becomes negligible.") + 
+  xlab("Precipitation (mm)") + 
+  ylab("Predicted Cases")
+
+# wildcard = average temperature 
+partial(dengue_forest, pred.var = "avg_temp_k", plot = TRUE,
+              plot.engine = "ggplot2") + 
+  my_theme +
+  ggtitle("Partial Dependence Plot of Average Temperature") + 
+  labs(caption = "Caption: The effect of average temperature on predicting total cases of Dengue fever changes, with the marginal effect of a one degree Kelvin increase in \n average temperature yielding a decline in predicted cases for temperatures below 300°K. After this point, an increase in average temperature has a positive effect on predicted cases until the maximum case threshold is reached.") + 
+  xlab("Avg Temperature (°K)") + 
+  ylab("Predicted Cases") 
+
+```
+
+
+## Predictive model building: green certification
+### Introduction
+Pricing rental terms for office buildings in the commercial real estate sector is a complex, multifaceted problem that incorporates a variety of attributes including asset class, age, renovation status, number of floors, location, and the availability of amenities. Within an asset class and submarket, asking rates for office space tend to vary greatly based on these differing characteristics. In this study, we investigate how a building's "green" rating impacts its revenue, calculated as the building's rent per square foot multiplied by its occupancy rate. As efforts to increase sustainability by adding environmentally features that certify a building to be LEED or Energystar certified, the financial impacts and returns to investment become increasingly relevant to a building's landlord. 
+
+### Data
+The data used in this study covers 7,894 properties extracted from a leading commercial real estate database. The property attributes included are geographic cluster, size, year-over-year local employment growth, rent per square foot, leasing rate, stories, age, renovation status, asset class, green rating, amenities, annual demand for cooling, annual demand for heating, annual precipitation, utility costs, and local market average rent. Of the 7,894 properties included in the original data, 685 buildings are LEED or Energystar certified, representing approximately 8.7%. 
+
+### Methodology
+First, the data was cleaned to remove missing values and filtered to include only buildings with full service gross rents to better compare across properties. After filtering, the data set narrowed minimally to 7,546 total properties, including 640 green rated properties. Diving deeper into the data, we find that the proportion of green rated buildings is larger in Class A properties with 17.2% of buildings being LEED or Energystar certified compared to only 2.8% of Class B properties. This trend was utilized in the model analysis to investigate whether or not green rated buildings had higher revenues than others, both over all asset classes and specifically within Class A properties. After creating the model, figures of actual versus predicted price were created to visualize the distribution of revenues across green ratings. Furthermore, a variable importance plot and a partial dependence plot was created to investigate the relative predictive power of individual attributes in the model and the marginal effects of these attributes on revenue. 
+
+### Analysis and Conclusion
+To build the best predictive model of revenue based on the given features, a random forest model was created using an 80% train-test split for cross validation purposes. Within the random forest model, 5-fold cross validation was used to prevent overfitting of the training data. The model was then stress tested using the remaining test data set, resulting in an RMSE of approximately $6.81/sf. Next, the data was plotted with actual revenue of the test data against predicted revenue to showcase model accuracy and any trends regarding green rating's impact on revenue. If LEED/Energystar rated buildings did garner higher rents, we would see an outsize population of green buildings on the graph where actual and/or predicted rents are higher. However, we do not observe such a trend in the overall data.  Next, we dug deeper into the Class A data specifically, which tend to have a higher proportion of green rated buildings than Class B or C properties. However, we again do not observe an abnormally large amount of green rated buildings in the upper ranges of predicted or actual revenue, indicating that green rating has a minimal, if any, effect on a building's revenue.  
+
+```{r, echo = FALSE, warning = FALSE}
+data = read_csv(here(("data/greenbuildings.csv")), na = "NA", show_col_types = FALSE) %>%
+  filter(net == 0) %>% 
+  select(-cluster) %>%
+  mutate(
+    rev_psf = (Rent*(leasing_rate/100))) 
+data = na.omit(data)
+
+## create prop table of class a and green
+class_green = table(data$class_a, data$class_b, data$green_rating)
+props = data.frame(prop.table(class_green, margin = 1))
+colnames(props) = c("Class_A","Class_B", "Green_Certified", "Proportion")
+props = props %>%
+  filter(!row_number() %in% c(4,8))
+props$Proportion = scales::percent(props$Proportion)
+kable(props, caption = "Table 1.1: Proportion of Green Rated Buildings by Asset Class")
+
+# train test splits
+set.seed(123)
+green_split = initial_split(data, 0.8)
+green_train = training(green_split)
+green_test = testing(green_split)
+
+# Random forest model
+green_forest = randomForest(rev_psf ~ . -CS_PropertyID -Rent -leasing_rate, data = green_train, na.action = na.omit, mtry = 6, ntree=100, cv.folds = 5)
+yhat_forest = predict(green_forest, newdata = green_test)
+yhat_forest = na.omit(yhat_forest)
+rmse_forest = sqrt(mean((yhat_forest - green_test$rev_psf)^2))
+
+test_pred = green_test %>%
+  mutate(
+    yhat = yhat_forest,
+    resid = yhat_forest - rev_psf
+  )
+
+### plot predicted with green certification vs. none 
+ggplot(data = test_pred, aes(x=yhat, y=rev_psf, color = as.factor(green_rating))) +
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1, size = 0.5, linetype = "dashed", color = "gray80", alpha = 0.4) +
+  scale_color_viridis(option = "mako", begin = 0.1, end = 0.7, alpha = 0.8, discrete = TRUE, labels = c("None", "Green")) + 
+  ggtitle("Predicted vs. Actual Revenue PSF", subtitle = "Green rated buildings do not tend to outperform other buildings.") +
+  xlab("Predicted ($/sf)") + 
+  ylab("Actual ($/sf)") + 
+  labs(color="Green Rating") + 
+  my_scatter_theme2
+
+### Class A only 
+ggplot(data = subset(test_pred, class_a == 1), aes(x=yhat, y=rev_psf, color = as.factor(green_rating))) +
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1, size = 0.5, linetype = "dashed", color = "gray80", alpha = 0.4) +
+  scale_color_viridis(option = "mako", begin = 0.1, end = 0.7, alpha = 0.8, discrete = TRUE, labels = c("None", "Green")) + 
+  ggtitle("Predicted vs. Actual Revenue PSF (Class A)", subtitle = "Green rated buildings do not tend to outperform other class A buildings.") +
+  xlim(0,75) + 
+  ylim(0,75) + 
+  xlab("Predicted ($/sf)") + 
+  ylab("Actual ($/sf)") + 
+  labs(color="Green Rating") + 
+  my_scatter_theme2
+
+# Boxplot plot by green rating
+ggplot(data = subset(test_pred, class_a == 1), aes(x=green_rating, y=yhat, color = as.factor(green_rating))) +
+  geom_boxplot(fill = "#444569") + 
+  scale_color_viridis(option = "mako", begin = 0.1, end = 0.7, alpha = 0.8, discrete = TRUE, labels = c("None", "Green")) + 
+  ggtitle("Predicted vs. Actual Revenue PSF (Class A)", subtitle = "Green rated buildings do not tend to outperform other class A buildings.") +
+  xlab("") + 
+  ylab("Predicted ($/sf)") + 
+  scale_x_discrete(breaks = c("0", "1")) + 
+  labs(color="Green Rating") + 
+  my_scatter_theme2
+```
+
+  To further catalyze on this question, a partial dependence plot was created to determine the marginal effect that a building being green rated has on revenue. From the figure, we see there is a slight increase in revenue for green buildings of approximately \text{$}0.34/sf. Looking at the variable importance plot, we see that market rent, size, stories, and age have the highest predictive power based on our model. Overall, we find no significant evidence that green rated buildings garner higher revenues than other buildings.  
+
+```{r}
+## PDP Plots - Green Rating
+partial(green_forest, pred.var = "green_rating")
+partial(green_forest, pred.var = "green_rating", plot = TRUE,
+              plot.engine = "ggplot2") + 
+  my_theme +
+  scale_color_viridis(option = "#444569") + 
+  ggtitle("Partial Dependence Plot of Green Rating", subtitle = "Green certified buildings garner a minimal premium of $0.34/sf over non-green buildings.") + 
+  xlab("Green Rating") + 
+  ylab("Predicted Revenue ($/sf)") 
+
+vip(green_forest, aesthetics = list(fill = "#444569"), all_permutations = TRUE) + 
+  my_theme + 
+  ggtitle("Variable Importance Plot", subtitle = "Green rating ranks among the lowest for predictive power of a building's revenue") 
+```
+
+
+## Predictive model building: California housing
+### Introduction
+The aim of this analysis is to predict median house value of California residential homes by census tract based on a selection of characteristics in each census tract including median age, population, number of households, number of rooms and bedrooms, and median income.  
+* longitude, latitude: coordinates of the geographic centroid of the census tract
+* housingMedianAge: median age in years of all residential households in the census tract
+* population: total population of the tract
+* households: total number of households in the tract.
+* totalRooms, totalBedrooms: total number of rooms and bedrooms for households in the tract. NOTE: these are totals, not averages. Consider standardizing by households.
+* medianIncome: median household income in USD for all households in the tract.
+* medianHouseValue: median market value of all households in the tract.
+
+### Data
+The data set used in this analysis includes information on 20,640 census tracts in the state of California. The data was filtered to remove missing values and the totalBedrooms and totalRooms variables were normalized by dividing by the number of households in each tract. 
+
+### Methodology
+First, the centroids of each cluster were mapped and colored according to their median house value. Then, a random forest model was created to predict median house value based on all above attributes. An 80% train-test split was utilized to prevent overfitting of data. When stress tested on the test set data, the random forest model generated an out-of-sample fit of approximately $49,651.00. The predicted test set values were then mapped with a color scale representing median house value. Next, the residuals for each census tract were mapped with a color scale representing the error generated from the random forest model. Finally, a variable importance plot was created to show the variables with the most predictive power in projecting median house value.  
+
+### Conclusion
+From the first figure, we observe that there are two obvious clusters of high median home values located near the economic hubs of Los Angeles and San Francisco. Near these clusters, we also observe the largest errors from our random forest model, indicating that our model performs worse in predicting home values in the upper quantile. 
+```{r}
+# load data and remove NAs
+ca_housing = read_csv(here(("data/CAhousing.csv")), na = "NA", show_col_types = FALSE)
+ca_housing = na.omit(ca_housing)
+ca_housing$totalBedrooms = (ca_housing$totalBedrooms)/(ca_housing$households)
+ca_housing$totalRooms = (ca_housing$totalRooms)/(ca_housing$households)
+ca_housing = ca_housing %>%
+  rename(
+    bedroomsPerHousehold = totalBedrooms,
+    roomsPerHousehold = totalRooms
+  )
+
+# plot house value data on map  
+m = get_stamenmap(bbox = c(left = -128.00, bottom = 32.54, right = -110.00, top = 42.20),
+          maptype = "terrain",
+          color = "bw",
+          crop = FALSE,
+          zoom = 8)
+ggmap(m) + 
+  geom_point(data = ca_housing, aes(x = longitude, y = latitude, color = medianHouseValue, alpha = 0.8)) + 
+  scale_color_viridis(option = "mako", label = dollar_format()) + 
+  my_scatter_theme + 
+  guides(alpha="none") + 
+  labs(color = "median value") +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_discrete(labels = NULL, breaks = NULL) +
+  xlab("") + 
+  ylab("") + 
+  ggtitle("Median Residential Home Values in CA",
+          subtitle = "Residential house values are highest near California's coastline, with the most expensive \n homes clustering around the state's economic hubs of Los Angeles and the Bay Area.")
+
+# split into train test 
+set.seed(123)
+house_split = initial_split(ca_housing, 0.8)
+house_train = training(house_split)
+house_test = testing(house_split)
+
+# create RF model 
+forest_house = randomForest(medianHouseValue ~ ., data = house_train, mtry = 8, ntree = 50)
+yhat_train = predict(forest_house, house_train) # in sample fit 
+rmse_train = mean((yhat_train - house_train$medianHouseValue)^2) %>% sqrt
+
+yhat_forest = predict(forest_house, house_test) # out of sample fit 
+rmse_forest = mean((yhat_forest - house_test$medianHouseValue)^2) %>% sqrt
+house_pred = house_test %>% cbind(yhat_forest)
+
+# plot predicted values
+ggmap(m) + 
+  geom_point(data = house_pred, aes(x = longitude, y = latitude, color = yhat_forest, alpha = 0.8)) + 
+  scale_color_viridis(option = "mako", labels = dollar_format()) + 
+  my_scatter_theme + 
+  guides(alpha="none") + 
+  labs(color = "predicted value") +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_discrete(labels = NULL, breaks = NULL) +
+  xlab("") + 
+  ylab("") + 
+  ggtitle("Predicted Median Residential Home Values in CA",
+          subtitle = "Median residential home values predicted using Random Forest model with 50 trees .")
+
+# plot residuals/errors
+house_err = house_pred %>% 
+  mutate(
+    resid = abs(yhat_forest - medianHouseValue)
+  )
+ggmap(m) + 
+  geom_point(data = house_err, aes(x = longitude, y = latitude, color = resid, alpha = 0.7)) + 
+  scale_color_viridis(option = "inferno", labels = dollar_format()) + 
+  my_scatter_theme + 
+  guides(alpha="none") +
+  labs(color = "error") + 
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_discrete(labels = NULL, breaks = NULL) + 
+  xlab("") + 
+  ylab("") + 
+  ggtitle("Predicted Error for Residential Home Values in CA",
+          subtitle = "Residuals tend to be larger in California's biggest cities along the coast, areas that also garner the state's highest median prices.")
+
+vip(forest_house, aesthetics = list(fill = "#444569"), all_permutations = TRUE) + 
+  my_theme + 
+  ggtitle("Variable Importance Plot", subtitle = "Median income and location rank among the highest for predictive power of a \n cencus tract's median house value") 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
