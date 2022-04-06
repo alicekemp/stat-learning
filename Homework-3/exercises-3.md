@@ -1,7 +1,7 @@
 Exercises-3
 ================
-Alice Kemp
-2022-03-23
+Alice Kemp -
+ECON39m - Spring 2022
 
 ## What Causes What: The Effect of Police on Crime
 
@@ -60,6 +60,25 @@ Alice Kemp
 
 ## Tree Modeling: Dengue Cases
 
+### Data
+
+In this analysis, we use data pertaining to weekly rates of dengue fever
+in two Latin American cities, San Juan, Puerto Rico and Iquitos, Peru to
+predict future cases based on a variety of environmental and geographic
+factors including city, season, specific humidity level, average diurnal
+temperature range, average temperature, and weekly precipitation levels.
+
+### Methodology
+
+In this analysis, we ran three statistical models to predict cases of
+dengue fever based on the available features. In the CART model, we
+found an average out-of-sample error of approximately 32.41 cases, while
+the Gradient-Boosted Trees (GBM) model returned an out-of-sample error
+of 29.81 cases. The Random Forest model outperformed both of the
+aforementioned models with an out-of-sample RMSE of 29 cases. Lastly, we
+investigate the partial dependence of select environmental variables on
+predicted dengue fever cases.
+
 ![](exercises-3_files/figure-gfm/dengue-1.png)<!-- -->
 
     ## Distribution not specified, assuming gaussian ...
@@ -83,7 +102,7 @@ RMSE
 Decision Tree
 </td>
 <td style="text-align:right;">
-33.35
+32.41
 </td>
 </tr>
 <tr>
@@ -91,7 +110,7 @@ Decision Tree
 Random Forest
 </td>
 <td style="text-align:right;">
-32.59
+29.00
 </td>
 </tr>
 <tr>
@@ -99,13 +118,34 @@ Random Forest
 Gradient-Boosted Trees
 </td>
 <td style="text-align:right;">
-33.14
+29.81
 </td>
 </tr>
 </tbody>
 </table>
 
 ![](exercises-3_files/figure-gfm/dengue-2.png)<!-- -->![](exercises-3_files/figure-gfm/dengue-3.png)<!-- -->![](exercises-3_files/figure-gfm/dengue-4.png)<!-- -->
+
+### Conclusion
+
+In predicting cases of dengue fever in Latin America, we find that the
+Random Forest model outperformed both the CART and GBM models with the
+lowest out-of-sample RMSE of the three. Plotting the partial dependence
+of choice variables yields informative results of the impact of certain
+environmental features on predicted cases. In particular, specific
+humidity in the 12-18 g/kg range shows a virtually steady impact on
+predicted cases of approximately 20 cases. However, as humidity
+increases from 18 to 20 g/kg, we find that the marginal impact on
+predicted cases increases at an increasingly steep rate, with predicted
+values leveling off at approximately 50 cases. Next, we investigate the
+marginal effect of precipitation levels and find that predicted cases
+increase moderately in the \>0 to 200 mm range before steeply increasing
+to a ceiling of roughly 37 cases. Finally, we observe that the effect of
+average temperature on predicting total cases changes, with the marginal
+effect of a one degree Kelvin increase in average temperature yielding a
+decline in predicted cases for temperatures below 300°K. After this
+point, an increase in average temperature has a positive effect on
+predicted cases until the maximum case threshold is reached.
 
 ## Predictive model building: green certification
 
@@ -154,26 +194,6 @@ Furthermore, a variable importance plot and a partial dependence plot
 was created to investigate the relative predictive power of individual
 attributes in the model and the marginal effects of these attributes on
 revenue.
-
-### Analysis and Conclusion
-
-To build the best predictive model of revenue based on the given
-features, a random forest model was created using an 80% train-test
-split for cross validation purposes. Within the random forest model,
-5-fold cross validation was used to prevent overfitting of the training
-data. The model was then stress tested using the remaining test data
-set, resulting in an RMSE of approximately $6.81/sf. Next, the data was
-plotted with actual revenue of the test data against predicted revenue
-to showcase model accuracy and any trends regarding green rating’s
-impact on revenue. If LEED/Energystar rated buildings did garner higher
-rents, we would see an outsize population of green buildings on the
-graph where actual and/or predicted rents are higher. However, we do not
-observe such a trend in the overall data. Next, we dug deeper into the
-Class A data specifically, which tend to have a higher proportion of
-green rated buildings than Class B or C properties. However, we again do
-not observe an abnormally large amount of green rated buildings in the
-upper ranges of predicted or actual revenue, indicating that green
-rating has a minimal, if any, effect on a building’s revenue.
 
 <table>
 <caption>
@@ -303,7 +323,24 @@ x
 </table>
 
 ![](exercises-3_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
-
+\### Conclusion To build the best predictive model of revenue based on
+the given features, a random forest model was created using an 80%
+train-test split for cross validation purposes. Within the random forest
+model, 5-fold cross validation was used to prevent overfitting of the
+training data. The model was then stress tested using the remaining test
+data set, resulting in an RMSE of approximately $6.81/sf. Next, the data
+was plotted with actual revenue of the test data against predicted
+revenue to showcase model accuracy and any trends regarding green
+rating’s impact on revenue. If LEED/Energystar rated buildings did
+garner higher rents, we would see an outsize population of green
+buildings on the graph where actual and/or predicted rents are higher.
+However, we do not observe such a trend in the overall data. Next, we
+dug deeper into the Class A data specifically, which tend to have a
+higher proportion of green rated buildings than Class B or C properties.
+However, we again do not observe an abnormally large amount of green
+rated buildings in the upper ranges of predicted or actual revenue,
+indicating that green rating has a minimal, if any, effect on a
+building’s revenue.  
 To further catalyze on this question, a partial dependence plot was
 created to determine the marginal effect that a building being green
 rated has on revenue. From the figure, we see there is a slight increase
@@ -313,42 +350,41 @@ age have the highest predictive power based on our model. Overall, we
 find no significant evidence that green rated buildings garner higher
 revenues than other buildings.
 
-``` r
-## PDP Plots - Green Rating
-partial(green_forest, pred.var = "green_rating")
-```
+<table>
+<caption>
+Partial Dependence of Green Rating
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;">
+green_rating
+</th>
+<th style="text-align:right;">
+yhat
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+24.08
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+24.34
+</td>
+</tr>
+</tbody>
+</table>
 
-    ##   green_rating     yhat
-    ## 1            0 24.07793
-    ## 2            1 24.33559
-
-``` r
-partial(green_forest, pred.var = "green_rating", plot = TRUE,
-              plot.engine = "ggplot2") + 
-  my_theme +
-  scale_color_viridis(option = "#444569") + 
-  ggtitle("Partial Dependence Plot of Green Rating", subtitle = "Green certified buildings garner a minimal premium of $0.34/sf over non-green buildings.") + 
-  xlab("Green Rating") + 
-  ylab("Predicted Revenue ($/sf)") 
-```
-
-    ## Warning in viridisLite::viridis(256, alpha, begin, end, direction, option):
-    ## Option '#444569' does not exist. Defaulting to 'viridis'.
-
-    ## Warning: Use of `object[[1L]]` is discouraged. Use `.data[[1L]]` instead.
-
-    ## Warning: Use of `object[["yhat"]]` is discouraged. Use `.data[["yhat"]]`
-    ## instead.
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
-
-``` r
-vip(green_forest, aesthetics = list(fill = "#444569"), all_permutations = TRUE) + 
-  my_theme + 
-  ggtitle("Variable Importance Plot", subtitle = "Green rating ranks among the lowest for predictive power of a building's revenue") 
-```
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+![](exercises-3_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
 
 ## Predictive model building: California housing
 
@@ -363,9 +399,8 @@ census tract \* housingMedianAge: median age in years of all residential
 households in the census tract \* population: total population of the
 tract \* households: total number of households in the tract. \*
 totalRooms, totalBedrooms: total number of rooms and bedrooms for
-households in the tract. NOTE: these are totals, not averages. Consider
-standardizing by households. \* medianIncome: median household income in
-USD for all households in the tract. \* medianHouseValue: median market
+households in the tract. \* medianIncome: median household income in USD
+for all households in the tract. \* medianHouseValue: median market
 value of all households in the tract.
 
 ### Data
@@ -396,450 +431,6 @@ From the first figure, we observe that there are two obvious clusters of
 high median home values located near the economic hubs of Los Angeles
 and San Francisco. Near these clusters, we also observe the largest
 errors from our random forest model, indicating that our model performs
-worse in predicting home values in the upper quantile.
-
-``` r
-# load data and remove NAs
-ca_housing = read_csv(here(("data/CAhousing.csv")), na = "NA", show_col_types = FALSE)
-ca_housing = na.omit(ca_housing)
-ca_housing$totalBedrooms = (ca_housing$totalBedrooms)/(ca_housing$households)
-ca_housing$totalRooms = (ca_housing$totalRooms)/(ca_housing$households)
-ca_housing = ca_housing %>%
-  rename(
-    bedroomsPerHousehold = totalBedrooms,
-    roomsPerHousehold = totalRooms
-  )
-
-# plot house value data on map  
-m = get_stamenmap(bbox = c(left = -128.00, bottom = 32.54, right = -110.00, top = 42.20),
-          maptype = "terrain",
-          color = "bw",
-          crop = FALSE,
-          zoom = 8)
-```
-
-    ## 140 tiles needed, this may take a while (try a smaller zoom).
-
-    ## Source : http://tile.stamen.com/terrain/8/36/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/94.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/95.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/96.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/97.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/98.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/99.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/100.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/101.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/102.png
-
-    ## Source : http://tile.stamen.com/terrain/8/36/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/37/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/38/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/39/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/40/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/41/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/42/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/43/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/44/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/45/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/46/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/47/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/48/103.png
-
-    ## Source : http://tile.stamen.com/terrain/8/49/103.png
-
-``` r
-ggmap(m) + 
-  geom_point(data = ca_housing, aes(x = longitude, y = latitude, color = medianHouseValue, alpha = 0.8)) + 
-  scale_color_viridis(option = "mako", label = dollar_format()) + 
-  my_scatter_theme + 
-  guides(alpha="none") + 
-  labs(color = "median value") +
-  scale_x_discrete(labels = NULL, breaks = NULL) +
-  scale_y_discrete(labels = NULL, breaks = NULL) +
-  xlab("") + 
-  ylab("") + 
-  ggtitle("Median Residential Home Values in CA",
-          subtitle = "Residential house values are highest near California's coastline, with the most expensive \n homes clustering around the state's economic hubs of Los Angeles and the Bay Area.")
-```
-
-    ## Scale for 'x' is already present. Adding another scale for 'x', which will
-    ## replace the existing scale.
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-``` r
-# split into train test 
-set.seed(123)
-house_split = initial_split(ca_housing, 0.8)
-house_train = training(house_split)
-house_test = testing(house_split)
-
-# create RF model 
-forest_house = randomForest(medianHouseValue ~ ., data = house_train, mtry = 8, ntree = 50)
-yhat_train = predict(forest_house, house_train) # in sample fit 
-rmse_train = mean((yhat_train - house_train$medianHouseValue)^2) %>% sqrt
-
-yhat_forest = predict(forest_house, house_test) # out of sample fit 
-rmse_forest = mean((yhat_forest - house_test$medianHouseValue)^2) %>% sqrt
-house_pred = house_test %>% cbind(yhat_forest)
-
-# plot predicted values
-ggmap(m) + 
-  geom_point(data = house_pred, aes(x = longitude, y = latitude, color = yhat_forest, alpha = 0.8)) + 
-  scale_color_viridis(option = "mako", labels = dollar_format()) + 
-  my_scatter_theme + 
-  guides(alpha="none") + 
-  labs(color = "predicted value") +
-  scale_x_discrete(labels = NULL, breaks = NULL) +
-  scale_y_discrete(labels = NULL, breaks = NULL) +
-  xlab("") + 
-  ylab("") + 
-  ggtitle("Predicted Median Residential Home Values in CA",
-          subtitle = "Median residential home values predicted using Random Forest model with 50 trees .")
-```
-
-    ## Scale for 'x' is already present. Adding another scale for 'x', which will
-    ## replace the existing scale.
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in min(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
-
-``` r
-# plot residuals/errors
-house_err = house_pred %>% 
-  mutate(
-    resid = abs(yhat_forest - medianHouseValue)
-  )
-ggmap(m) + 
-  geom_point(data = house_err, aes(x = longitude, y = latitude, color = resid, alpha = 0.7)) + 
-  scale_color_viridis(option = "inferno", labels = dollar_format()) + 
-  my_scatter_theme + 
-  guides(alpha="none") +
-  labs(color = "error") + 
-  scale_x_discrete(labels = NULL, breaks = NULL) +
-  scale_y_discrete(labels = NULL, breaks = NULL) + 
-  xlab("") + 
-  ylab("") + 
-  ggtitle("Predicted Error for Residential Home Values in CA",
-          subtitle = "Residuals tend to be larger in California's biggest cities along the coast, areas that also garner the state's highest median prices.")
-```
-
-    ## Scale for 'x' is already present. Adding another scale for 'x', which will
-    ## replace the existing scale.
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in min(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-    ## Warning in min(x): no non-missing arguments to min; returning Inf
-
-    ## Warning in max(x): no non-missing arguments to max; returning -Inf
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
-
-``` r
-vip(forest_house, aesthetics = list(fill = "#444569"), all_permutations = TRUE) + 
-  my_theme + 
-  ggtitle("Variable Importance Plot", subtitle = "Median income and location rank among the highest for predictive power of a \n cencus tract's median house value") 
-```
-
-![](exercises-3_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
+worse in predicting home values in the upper quantiles of median home
+values.
+![](exercises-3_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
