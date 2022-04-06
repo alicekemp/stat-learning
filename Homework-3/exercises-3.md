@@ -66,7 +66,7 @@ Alice Kemp
 
 <table>
 <caption>
-Table 1.1: Model RMSE
+Random Forest RMSE
 </caption>
 <thead>
 <tr>
@@ -284,18 +284,19 @@ Proportion
 </table>
 <table>
 <caption>
-Table 1.1: Random Forest RMSE
+Random Forest RMSE
 </caption>
 <thead>
 <tr>
 <th style="text-align:right;">
+x
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:right;">
-6.77
+6.7683
 </td>
 </tr>
 </tbody>
@@ -753,29 +754,7 @@ rmse_train = mean((yhat_train - house_train$medianHouseValue)^2) %>% sqrt
 yhat_forest = predict(forest_house, house_test) # out of sample fit 
 rmse_forest = mean((yhat_forest - house_test$medianHouseValue)^2) %>% sqrt
 house_pred = house_test %>% cbind(yhat_forest)
-kable(rmse_forest, digits=2, col.names = "", caption = "Table 1.1: Random Forest RMSE")
-```
 
-<table>
-<caption>
-Table 1.1: Random Forest RMSE
-</caption>
-<thead>
-<tr>
-<th style="text-align:right;">
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-49651.45
-</td>
-</tr>
-</tbody>
-</table>
-
-``` r
 # plot predicted values
 ggmap(m) + 
   geom_point(data = house_pred, aes(x = longitude, y = latitude, color = yhat_forest, alpha = 0.8)) + 

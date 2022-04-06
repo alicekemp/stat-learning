@@ -92,6 +92,7 @@ yhat_forest = na.omit(yhat_forest)
 dengue_test = dengue_test[-c(31,291), ] # NA's in predict set, removed i-th rows from test set
 rmse_forest = sqrt(mean((yhat_forest - dengue_test$total_cases)^2))
 
+
 # Gradient-boosted trees
 boost_dengue = gbm(total_cases ~ as.factor(city) + as.factor(season) + specific_humidity + tdtr_k + precipitation_amt + avg_temp_k, data=dengue_train, n.trees=500, shrinkage=.05)
 yhat_boost = predict(boost_dengue, newdata = dengue_test, n.trees=500)
@@ -101,7 +102,7 @@ rmse_boost = sqrt(mean((yhat_boost - dengue_test$total_cases)^2))
 rmse = data.frame(rbind(rmse_tree, rmse_forest, rmse_boost))
 colnames(rmse) = c("RMSE")
 rownames(rmse) = c("Decision Tree", "Random Forest", "Gradient-Boosted Trees")
-kable(rmse, digits = 2, caption = "Table 1.1: Model RMSE")
+kable(rmse, digits = 2, caption = "Random Forest RMSE")
 
 # Partial dependence plots for RF
 # specific humidity 
@@ -162,7 +163,7 @@ colnames(props) = c("Class_A","Class_B", "Green_Certified", "Proportion")
 props = props %>%
   filter(!row_number() %in% c(4,8))
 props$Proportion = scales::percent(props$Proportion)
-kable(props, caption = "Table 1.1: Proportion of Green Rated Buildings by Asset Class")
+kable(props, digits = 2, caption = "Table 1.1: Proportion of Green Rated Buildings by Asset Class")
 
 # train test splits
 set.seed(123)
@@ -175,6 +176,7 @@ green_forest = randomForest(rev_psf ~ . -CS_PropertyID -Rent -leasing_rate, data
 yhat_forest = predict(green_forest, newdata = green_test)
 yhat_forest = na.omit(yhat_forest)
 rmse_forest = sqrt(mean((yhat_forest - green_test$rev_psf)^2))
+kable(rmse_forest, digits = 4, caption = "Random Forest RMSE")
 
 test_pred = green_test %>%
   mutate(
