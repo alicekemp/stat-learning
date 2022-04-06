@@ -1,7 +1,7 @@
 ---
 title: "Exercises-3"
 author: "Alice Kemp - "
-date: 'ECON39m - Spring 2022'
+date: 'ECON395m - Spring 2022'
 output: github_document
 ---
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
@@ -14,7 +14,7 @@ my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
         plot.title = element_text(face = "bold", size = rel(1.5)),
         plot.subtitle = element_text(face = "plain", size = rel(1.0), color = "grey60"),
         plot.caption = element_text(face = "italic", size = rel(0.7), 
-                                    color = "grey70", hjust = 0),
+                                    color = "grey60", hjust = 0),
         legend.title = element_text(face = "bold"),
         strip.text = element_text(face = "bold", size = rel(1.1), hjust = 0),
         axis.title = element_text(face = "bold"))
@@ -22,9 +22,9 @@ my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
 my_scatter_theme = theme_gray(base_family = "Arial Narrow", base_size = 12) +
   theme(
         plot.title = element_text(face = "bold", size = rel(1.5)),
-        plot.subtitle = element_text(face = "plain", size = rel(0.8), color = "grey70"),
+        plot.subtitle = element_text(face = "plain", size = rel(0.8), color = "grey60"),
         plot.caption = element_text(face = "italic", size = rel(0.7), 
-                                    color = "grey70", hjust = 0),
+                                    color = "grey60", hjust = 0),
         legend.title = element_text(face = "bold"),
         axis.title = element_text(face = "bold"))
 
@@ -54,13 +54,13 @@ my_scatter_theme2 = theme_gray(base_family = "Arial Narrow", base_size = 12) +
 1. *Why can’t I just get data from a few different cities and run the regression of “Crime” on “Police” to understand how more cops in the streets affect crime? (“Crime” refers to some measure of crime rate and “Police” measures the number of cops in a city.)*  
   If you run a simple regression of "crime" on "police, you will not be controlling for the fact that cities with naturally higher crime rates tend to hire more police. Thus, you would need to control for this by using an instrumental variable or find an example where the amount of police dispatched in a day is independent of the level of criminal activity occurring. 
 
-2. *How were the researchers from UPenn able to isolate this effect? Briefly describe their approach and discuss their result in the “Table 2” below, from the researchers' paper.* 
+2. *How were the researchers from UPenn able to isolate this effect? Briefly describe their approach and discuss their result in the “Table 2” below, from the researchers' paper.*   
   Researchers from UPenn were able to isolate the effect of amount of police on criminal activity by finding an example where there was a high level of police on the streets unrelated to actual criminal activity - the terrorism alert system in D.C. that dispatched police based on the threat of terrorism, unrelated to the current level of street crime. In this example, researchers sought to discern what happens to street crime on days when the terror alert system was orange (moderate level). On these days, they found that crime rates decreased overall, however, a potential confounding issue was if this decline was simply due to fewer criminals and victims being out on the streets during these moderate to high terrorism threat levels. On orange alert days, daily crime rates were estimated to be -7.316% lower on average, ceteris paribus, than on low or no alert days. After controlling for a possible change in crime derived from individuals staying home on high alert days through metro ridership, daily crime rates were estimated to be -6.046% lower on average on high alert days, ceteris paribus. 
 
-3. *Why did they have to control for Metro ridership? What was that trying to capture?*    
+3. *Why did they have to control for Metro ridership? What was that trying to capture?*      
   A potential confounding issue was if the decline in crime was simply due to fewer criminals and victims being out on the streets during these moderate to high terrorism threat levels. Thus, controlling for Metro ridership, which was normal during these times, mitigated this issue. 
 
-4. *Below I am showing you "Table 4" from the researchers' paper. Just focus on the first column of the table. Can you describe the model being estimated here? What is the conclusion?*  
+4. *Below I am showing you "Table 4" from the researchers' paper. Just focus on the first column of the table. Can you describe the model being estimated here? What is the conclusion?*    
   The model being estimated is the reduction in crime on high alert days in District 1, containing D.C.'s National Mall. The researchers found that on average, there were 2.62 fewer crimes per day on all else held fixed, in District 1 han in other districts. Other districts show on average a reduction in crimes by 0.571 per day, ceteris paribus, however, this result is not statistically significant.  Overall, there is a baseline -11.058 crime reduction on high alert days across all districts with Metro ridership being 2.477% higher on high alert days. 
 
 
@@ -224,6 +224,7 @@ ggplot(data = subset(test_pred, class_a == 1), aes(x=green_rating, y=yhat, color
   labs(color="Green Rating") + 
   my_scatter_theme2
 ```
+
 ### Conclusion
 To build the best predictive model of revenue based on the given features, a random forest model was created using an 80% train-test split for cross validation purposes. Within the random forest model, 5-fold cross validation was used to prevent overfitting of the training data. The model was then stress tested using the remaining test data set, resulting in an RMSE of approximately $6.81/sf. Next, the data was plotted with actual revenue of the test data against predicted revenue to showcase model accuracy and any trends regarding green rating's impact on revenue. If LEED/Energystar rated buildings did garner higher rents, we would see an outsize population of green buildings on the graph where actual and/or predicted rents are higher. However, we do not observe such a trend in the overall data.  Next, we dug deeper into the Class A data specifically, which tend to have a higher proportion of green rated buildings than Class B or C properties. However, we again do not observe an abnormally large amount of green rated buildings in the upper ranges of predicted or actual revenue, indicating that green rating has a minimal, if any, effect on a building's revenue.    
   To further catalyze on this question, a partial dependence plot was created to determine the marginal effect that a building being green rated has on revenue. From the figure, we see there is a slight increase in revenue for green buildings of approximately \text{$}0.34/sf. Looking at the variable importance plot, we see that market rent, size, stories, and age have the highest predictive power based on our model. Overall, we find no significant evidence that green rated buildings garner higher revenues than other buildings.  
@@ -248,14 +249,14 @@ vip(green_forest, aesthetics = list(fill = "#444569"), all_permutations = TRUE) 
 
 ## Predictive model building: California housing
 ### Introduction
-The aim of this analysis is to predict median house value of California residential homes by census tract based on a selection of characteristics in each census tract including median age, population, number of households, number of rooms and bedrooms, and median income.  
-* longitude, latitude: coordinates of the geographic centroid of the census tract
-* housingMedianAge: median age in years of all residential households in the census tract
-* population: total population of the tract
-* households: total number of households in the tract.
-* totalRooms, totalBedrooms: total number of rooms and bedrooms for households in the tract.
-* medianIncome: median household income in USD for all households in the tract.
-* medianHouseValue: median market value of all households in the tract.
+The aim of this analysis is to predict median house value of California residential homes by census tract based on a selection of characteristics in each census tract including median age, population, number of households, number of rooms and bedrooms, and median income.    
+* longitude, latitude: coordinates of the geographic centroid of the census tract  
+* housingMedianAge: median age in years of all residential households in the census tract  
+* population: total population of the tract  
+* households: total number of households in the tract  
+* totalRooms, totalBedrooms: total number of rooms and bedrooms for households in the tract  
+* medianIncome: median household income in USD for all households in the tract  
+* medianHouseValue: median market value of all households in the tract  
 
 ### Data
 The data set used in this analysis includes information on 20,640 census tracts in the state of California. The data was filtered to remove missing values and the totalBedrooms and totalRooms variables were normalized by dividing by the number of households in each tract. 
@@ -263,8 +264,6 @@ The data set used in this analysis includes information on 20,640 census tracts 
 ### Methodology
 First, the centroids of each cluster were mapped and colored according to their median house value. Then, a random forest model was created to predict median house value based on all above attributes. An 80% train-test split was utilized to prevent overfitting of data. When stress tested on the test set data, the random forest model generated an out-of-sample fit of approximately $49,651.00. The predicted test set values were then mapped with a color scale representing median house value. Next, the residuals for each census tract were mapped with a color scale representing the error generated from the random forest model. Finally, a variable importance plot was created to show the variables with the most predictive power in projecting median house value.  
 
-### Conclusion
-From the first figure, we observe that there are two obvious clusters of high median home values located near the economic hubs of Los Angeles and San Francisco. Near these clusters, we also observe the largest errors from our random forest model, indicating that our model performs worse in predicting home values in the upper quantiles of median home values. 
 ```{r, echo = FALSE, warning=FALSE, message=FALSE}
 # load data and remove NAs
 ca_housing = read_csv(here(("data/CAhousing.csv")), na = "NA", show_col_types = FALSE)
@@ -342,14 +341,29 @@ ggmap(m) +
   ylab("") + 
   ggtitle("Predicted Error for Residential Home Values in CA",
           subtitle = "Residuals tend to be larger in California's biggest cities along the coast, areas that also garner the state's highest median prices.")
+```
 
+### Conclusion
+From the first figure, we observe that there are two obvious clusters of high median home values located near the economic hubs of Los Angeles and San Francisco. Near these clusters, we also observe the largest errors from our random forest model, indicating that our model performs worse in predicting home values in the upper quantiles of median home values. In the final figure, we visualize the predictive power of the Random Forest model's features using a variable importance plot. From this plot, we conclude that a census tract's median income, geographic location, and median age are the most important features in predicting median house value, with population, number of households, and rooms/bedrooms per household ranking among the lowest in terms of predictive power. These results tend to support the underlying data trends with higher income census tracts being associated with higher median home prices in the Los Angeles and San Francisco areas.  
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
 vip(forest_house, aesthetics = list(fill = "#444569"), all_permutations = TRUE) + 
   my_theme + 
   ggtitle("Variable Importance Plot", subtitle = "Median income and location rank among the highest for predictive power of a \n cencus tract's median house value") 
+
+ggmap(m) + 
+  geom_point(data = ca_housing, aes(x = longitude, y = latitude, color = medianIncome, alpha = 0.8)) + 
+  scale_color_viridis(option = "mako", label = dollar_format()) + 
+  my_scatter_theme + 
+  guides(alpha="none") + 
+  labs(color = "median income") +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_discrete(labels = NULL, breaks = NULL) +
+  xlab("") + 
+  ylab("") + 
+  ggtitle("Median Incomes by Census Tract in California",
+          subtitle = "Median incomes are highest near California's coastline, with the highest earners clustering \n around the state's economic hubs of Los Angeles and the Bay Area.")
 ```
-
-
-
 
 
 

@@ -1,7 +1,7 @@
 Exercises-3
 ================
 Alice Kemp -
-ECON39m - Spring 2022
+ECON395m - Spring 2022
 
 ## What Causes What: The Effect of Police on Crime
 
@@ -18,15 +18,15 @@ ECON39m - Spring 2022
 
 2.  *How were the researchers from UPenn able to isolate this effect?
     Briefly describe their approach and discuss their result in the
-    “Table 2” below, from the researchers’ paper.* Researchers from
-    UPenn were able to isolate the effect of amount of police on
-    criminal activity by finding an example where there was a high level
-    of police on the streets unrelated to actual criminal activity - the
-    terrorism alert system in D.C. that dispatched police based on the
-    threat of terrorism, unrelated to the current level of street crime.
-    In this example, researchers sought to discern what happens to
-    street crime on days when the terror alert system was orange
-    (moderate level). On these days, they found that crime rates
+    “Table 2” below, from the researchers’ paper.*  
+    Researchers from UPenn were able to isolate the effect of amount of
+    police on criminal activity by finding an example where there was a
+    high level of police on the streets unrelated to actual criminal
+    activity - the terrorism alert system in D.C. that dispatched police
+    based on the threat of terrorism, unrelated to the current level of
+    street crime. In this example, researchers sought to discern what
+    happens to street crime on days when the terror alert system was
+    orange (moderate level). On these days, they found that crime rates
     decreased overall, however, a potential confounding issue was if
     this decline was simply due to fewer criminals and victims being out
     on the streets during these moderate to high terrorism threat
@@ -323,24 +323,26 @@ x
 </table>
 
 ![](exercises-3_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
-\### Conclusion To build the best predictive model of revenue based on
-the given features, a random forest model was created using an 80%
-train-test split for cross validation purposes. Within the random forest
-model, 5-fold cross validation was used to prevent overfitting of the
-training data. The model was then stress tested using the remaining test
-data set, resulting in an RMSE of approximately $6.81/sf. Next, the data
-was plotted with actual revenue of the test data against predicted
-revenue to showcase model accuracy and any trends regarding green
-rating’s impact on revenue. If LEED/Energystar rated buildings did
-garner higher rents, we would see an outsize population of green
-buildings on the graph where actual and/or predicted rents are higher.
-However, we do not observe such a trend in the overall data. Next, we
-dug deeper into the Class A data specifically, which tend to have a
-higher proportion of green rated buildings than Class B or C properties.
-However, we again do not observe an abnormally large amount of green
-rated buildings in the upper ranges of predicted or actual revenue,
-indicating that green rating has a minimal, if any, effect on a
-building’s revenue.  
+
+### Conclusion
+
+To build the best predictive model of revenue based on the given
+features, a random forest model was created using an 80% train-test
+split for cross validation purposes. Within the random forest model,
+5-fold cross validation was used to prevent overfitting of the training
+data. The model was then stress tested using the remaining test data
+set, resulting in an RMSE of approximately $6.81/sf. Next, the data was
+plotted with actual revenue of the test data against predicted revenue
+to showcase model accuracy and any trends regarding green rating’s
+impact on revenue. If LEED/Energystar rated buildings did garner higher
+rents, we would see an outsize population of green buildings on the
+graph where actual and/or predicted rents are higher. However, we do not
+observe such a trend in the overall data. Next, we dug deeper into the
+Class A data specifically, which tend to have a higher proportion of
+green rated buildings than Class B or C properties. However, we again do
+not observe an abnormally large amount of green rated buildings in the
+upper ranges of predicted or actual revenue, indicating that green
+rating has a minimal, if any, effect on a building’s revenue.  
 To further catalyze on this question, a partial dependence plot was
 created to determine the marginal effect that a building being green
 rated has on revenue. From the figure, we see there is a slight increase
@@ -395,13 +397,16 @@ residential homes by census tract based on a selection of
 characteristics in each census tract including median age, population,
 number of households, number of rooms and bedrooms, and median income.  
 \* longitude, latitude: coordinates of the geographic centroid of the
-census tract \* housingMedianAge: median age in years of all residential
-households in the census tract \* population: total population of the
-tract \* households: total number of households in the tract. \*
-totalRooms, totalBedrooms: total number of rooms and bedrooms for
-households in the tract. \* medianIncome: median household income in USD
-for all households in the tract. \* medianHouseValue: median market
-value of all households in the tract.
+census tract  
+\* housingMedianAge: median age in years of all residential households
+in the census tract  
+\* population: total population of the tract  
+\* households: total number of households in the tract  
+\* totalRooms, totalBedrooms: total number of rooms and bedrooms for
+households in the tract  
+\* medianIncome: median household income in USD for all households in
+the tract  
+\* medianHouseValue: median market value of all households in the tract
 
 ### Data
 
@@ -425,6 +430,8 @@ model. Finally, a variable importance plot was created to show the
 variables with the most predictive power in projecting median house
 value.
 
+![](exercises-3_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
+
 ### Conclusion
 
 From the first figure, we observe that there are two obvious clusters of
@@ -432,5 +439,14 @@ high median home values located near the economic hubs of Los Angeles
 and San Francisco. Near these clusters, we also observe the largest
 errors from our random forest model, indicating that our model performs
 worse in predicting home values in the upper quantiles of median home
-values.
-![](exercises-3_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
+values. In the final figure, we visualize the predictive power of the
+Random Forest model’s features using a variable importance plot. From
+this plot, we conclude that a census tract’s median income, geographic
+location, and median age are the most important features in predicting
+median house value, with population, number of households, and
+rooms/bedrooms per household ranking among the lowest in terms of
+predictive power. These results tend to support the underlying data
+trends with higher income census tracts being associated with higher
+median home prices in the Los Angeles and San Francisco areas.
+
+![](exercises-3_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->![](exercises-3_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
