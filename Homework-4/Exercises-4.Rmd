@@ -1,0 +1,188 @@
+---
+title: "Exercises 4"
+author: "Alice Kemp"
+date: 'ECO395M - Spring 2022'
+output: github_documents
+---
+
+```{r data, include=FALSE, echo = FALSE}
+if (!("librarian" %in% rownames(utils::installed.packages()))) {
+  utils::install.packages("librarian")}
+librarian::shelf(tidyverse, haven, mosaic, foreach, stargazer, rpart, rpart.plot, caret, dplyr, mosaic, here, rsample, modelr, purrr, randomForest, gbm, pdp, clusterR, cluster, clue, factoextra, lme4, viridis, ggspatial, basemaps, sf, rgeos, maptools, fdm2id, ggmap, scales, vip, kable, kableExtra, arules, arulesViz, igraph, prcomp)
+
+my_scatter_theme = theme_gray(base_family = "Arial Narrow", base_size = 12) +
+  theme(
+        plot.title = element_text(face = "bold", size = rel(1.5)),
+        plot.subtitle = element_text(face = "plain", size = rel(0.8), color = "grey60"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey60", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"))
+
+my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        plot.title = element_text(face = "bold", size = rel(1.5)),
+        plot.subtitle = element_text(face = "plain", size = rel(1.0), color = "grey60"),
+        plot.caption = element_text(face = "italic", size = rel(0.7), 
+                                    color = "grey60", hjust = 0),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(face = "bold", size = rel(1.1), hjust = 0),
+        axis.title = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45))
+
+```
+
+
+# Clustering and PCA
+## Data
+## Methodology
+## Interpretation
+
+```{r wine , echo = FALSE, message=FALSE, warning = FALSE}
+wine = data.frame(read.csv("data/wine.csv"))
+wine_comps = wine[,-c(12,13)]
+pca1 = prcomp(wine_comps, scale = TRUE, rank = 2)
+loadings = data.frame(pca1$rotation)
+loadings
+scores = pca1$x
+
+wine$pc1 = scores[,1]
+wine$pc2 = scores[,2]
+# plot by color
+ggplot(wine, aes(x = pc1, y = pc2, color = color)) + 
+  geom_point() + 
+  my_theme + 
+  scale_color_manual(values = c("red", "steelblue2")) + 
+  ggtitle("Principle Components Analysis: Color", subtitle = "PCA identified two distinct clusters of wine segmented by color")
+
+# plot by quality 
+ggplot(wine, aes(x = pc1, y = pc2, color = quality)) + 
+  geom_point(alpha = 0.7) + 
+  my_theme + 
+  scale_color_viridis(option  = "plasma") + 
+  ggtitle("Principle Components Analysis: Quality", subtitle = "Wine quality does not seem to emerge naturally as a clustering factor based on PCA")
+
+# kmeans
+set.seed(13)
+wine_km1 = wine[,-c(13,14,15)] # keep quality
+wine_km2 = wine[,-c(12,14,15)] # keep color
+
+km1 = kmeans(wine_km1, nstart = 20, centers = 2)
+km2 = kmeans(wine_km2, nstart = 20, centers = 2)
+
+fviz_cluster(km1, data = wine_km1, labelsize = 0) + scale_color_manual(values = c("red","steelblue2"))
+fviz_cluster(km2, data = wine_km2, labelsize = 0) + scale_color_manual(values = c("red","steelblue2"))
+
+```
+
+
+# Market segmentation
+## Data
+## Methodology
+## Interpretation
+
+```{r}
+social = read.csv("data/social_marketing.csv")
+
+head(social)
+
+social_clean = social %>% filter(spam == 0) %>% filter(adult == 0)
+social_comps = social_clean[,-c(1,36, 37)]
+pca = prcomp(social_comps, scale = TRUE, rank = 3)
+loadings = data.frame(pca$rotation)
+loadings
+scores = pca$x
+
+social_clean$pc1 = scores[,1]
+social_clean$pc2 = scores[,2]
+
+plot(pca, type = "l")
+var = get_pca_var(pca)
+fviz_pca_var(pca, col.var = "black")
+corrplot(var$cos2, is.corr=FALSE)
+
+# kmeans
+social_km = social_clean[,-c(1,36:39)]
+fviz_nbclust(social_km, kmeans, method = "wss", k.max = 20) + theme_minimal() + ggtitle("Elbow Method: Optimal Clusters")
+km2 = kmeans(social_km, centers = 6, nstart = 20)
+fviz_cluster(km2, data = social_km) + theme_minimal() + ggtitle("k = 6")
+
+cluster = c(1:6)
+center = km2$center
+center_df = data.frame(cluster, center)
+center_long = center_df %>% pivot_longer(chatter:small_business)
+
+ggplot(center_long, aes(x = name, y = log(value), color = as.factor(cluster), group = as.factor(cluster))) + 
+  geom_line(size = 0.8, alpha = 0.7) + 
+  my_theme + 
+  scale_color_viridis(option = "mako", discrete = TRUE) + 
+  ggtitle("Customer segmentation analysis (K = 5)", subtitle = "")
+
+
+```
+
+
+# Groceries
+```{r}
+library(tidyverse)
+library(arules) 
+library(arulesViz)
+library(igraph)
+
+# Association rule mining
+
+# Read in groceries
+groceries_raw = read.csv("data/groceries.txt", header=FALSE)
+
+str(groceries_raw)
+summary(groceries_raw)
+head(groceries_raw)
+
+####
+# Data pre-preprocessing
+####
+
+## Cast this resulting list of playlists as a special arules "transactions" class.
+groctrans = as(groceries_raw, "transactions")
+summary(groctrans )
+
+# Now run the 'apriori' algorithm
+# Look at rules with support > .01 & confidence >.1 & length (# artists) <= 5
+itemrules = apriori(groctrans , 
+	parameter=list(support=.01, confidence=.1, maxlen=2))
+                         
+# Look at the output... so many rules!
+#inspect(itemrules)
+
+## Choose a subset
+#inspect(subset(itemrules, lift > 10 & confidence > 0.05))
+
+# can swap the axes and color scales
+plot(itemrules, measure = c("support", "lift"), shading = "confidence")
+
+# "two key" plot: coloring is by size (order) of item set
+plot(itemrules, method='two-key plot')
+# order 1 are most popular
+# higher number of items indicates higher confidence
+
+# can now look at subsets driven by the plot
+#(subset(itemrules, support > 0.035))
+#inspect(subset(itemrules, confidence > 0.6))
+
+
+# graph-based visualization
+sub1 = subset(itemrules, subset=confidence > 0.01 & support > 0.005)
+summary(sub1)
+plot(sub1, method='graph')
+?plot.rules
+
+plot(head(sub1, 100, by='lift'), method='graph')
+
+# export a graph
+sub1 = subset(itemrules, subset=confidence > 0.25 & support > 0.005)
+saveAsGraph(sub1, file = "itemrules.graphml")
+```
+
+
+
