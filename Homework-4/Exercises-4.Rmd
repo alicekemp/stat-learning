@@ -2,13 +2,16 @@
 title: "Exercises 4"
 author: "Alice Kemp"
 date: 'ECO395M - Spring 2022'
-output: github_documents
+output: github_document
+always_allow_html: true
 ---
 
 ```{r data, include=FALSE, echo = FALSE}
+options(scipen = 999)
+
 if (!("librarian" %in% rownames(utils::installed.packages()))) {
   utils::install.packages("librarian")}
-librarian::shelf(tidyverse, haven, mosaic, foreach, stargazer, rpart, rpart.plot, caret, dplyr, mosaic, here, rsample, modelr, purrr, randomForest, gbm, pdp, clusterR, cluster, clue, factoextra, lme4, viridis, ggspatial, basemaps, sf, rgeos, maptools, fdm2id, ggmap, scales, vip, kable, kableExtra, arules, arulesViz, igraph, prcomp)
+librarian::shelf(tidyverse, haven, mosaic, foreach, stargazer, rpart, rpart.plot, caret, dplyr, mosaic, here, rsample, modelr, purrr, randomForest, gbm, pdp, clusterR, cluster, clue, factoextra, lme4, viridis, ggspatial, basemaps, sf, rgeos, maptools, fdm2id, ggmap, scales, vip, kable, kableExtra, arules, arulesViz, igraph, prcomp, gridExtra, ggcorrplot)
 
 my_scatter_theme = theme_gray(base_family = "Arial Narrow", base_size = 12) +
   theme(
@@ -36,12 +39,58 @@ my_theme = theme_minimal(base_family = "Arial Narrow", base_size = 12) +
 
 # Clustering and PCA
 ## Data
-## Methodology
-## Interpretation
+  The data used in this analysis includes information on 11 different chemical properties of 6,500 bottles of wine from the Northern Portugal area. In this analysis, we seek to naturally recover whether a wine was red or white, along with the bottle's quality level, scored on a numeric scale from one to ten. In addition, we will uncover the most important features that distinguish a red from a white wine and their quality scores.  
 
-```{r wine , echo = FALSE, message=FALSE, warning = FALSE}
+## Methodology
+  First, the data was cleaned to remove any missing values. Then, a K-means unsupervised clustering method was performed using an optimal K of 2 for clustering to red verus white and by quality. The data was normalized using the z-score technique in order to use the K-means clustering algorithm. Next, the unscaled data was analyzed using Principle Components Analysis or PCA to uncover the chemical property weights that make up red and white wines and that influence the quality of the wine. 
+
+## Interpretation
+  Looking at Figure 1, we see that there appear to be two distinct clusters found using k-means with k equal to two, indicating that color may be a valid clustering factor. However, in the second graph, we observe less distinct groups with a k value of five, indicating that quality may not be as significant of a clustering factor as color. In Figure 3, we see that the K-means clustering algorithm did overwhelmingly sort the wines by color, with cluster 1 including mainly white wines and cluster two including mostly red wines. In Figure 4, however, we see that each cluster does not tend to be comprised of similar quality scores, showing that wines do not tend to naturally separate by quality score - perhaps the quality score indicator is not consistently correlated with the same characteristics across wine (i.e. ph level, sulfates, acidity, color).  
+  From the Principle Componente Analysis of rank 2, we find that wines in PC1 differ from wines in PC2 due to higher levels of free and total sulfur dioxide, low density, low alcohol, high sulphates, and volatile acidity. In comparison, wines in PC2 tend to be lower in volatile acidity, much lower in sulfur dioxide, much higher in density and much higher in alcohol. After plotting PC1 versus PC2 and coloring by wine color, we find that there does appear to be a distinct split in color based on principle components with white wines belonging to PC1 and red wines belonging to PC2 - this is essentially the same result from our K-means derived clustering above. Similarly, quality score does not seem to be a consistent clustering determinant for wine with no clear separation by principle components. If anything, lower quality scores appear to have negative PC2 weights, while higher scored wines may have larger PC2 weights. 
+
+
+```{r wine, echo = FALSE, message=FALSE, warning = FALSE}
 wine = data.frame(read.csv("data/wine.csv"))
 wine_comps = wine[,-c(12,13)]
+
+# kmeans
+set.seed(13)
+wine_norm = wine_comps %>% mutate_all(scale)
+
+km1 = kmeans(wine_norm, nstart = 20, centers = 2)
+km2 = kmeans(wine_norm, nstart = 20, centers = 5)
+
+factoextra::fviz_cluster(km1, data = wine_norm, labelsize = 0) + scale_color_viridis_d(option = "mako", begin = .4, end = 0.8, alpha = 0.8) + ggtitle("Fig 1: K-means Cluster Analysis (K=2)")
+factoextra::fviz_cluster(km2, data = wine_norm, labelsize = 0) + ggtitle("Fig 1: K-means Cluster Analysis (K=5)")
+
+# get cluster counts for each color/quality wine 
+wine_km1 = wine %>% 
+  mutate(cluster = km1$cluster) %>% 
+  select(color, cluster)
+
+wine_km2 = wine %>% 
+  mutate(cluster = km2$cluster) %>% 
+  select(cluster, quality) 
+
+# plot cluster bargraphs by color/quality count
+ggplot(wine_km1, aes(x = as.factor(cluster), fill = color)) + 
+  geom_bar() + 
+  my_theme + 
+  ggtitle("Fig 3: Wine color by cluster id", subtitle = "K-means accurately clusters data based on wine color") + 
+  scale_fill_viridis_d(option = "mako", begin = .4, end = .8, name = "color") + 
+  xlab("cluster")
+
+ggplot(wine_km2, aes(x = as.factor(cluster), fill = as.factor(quality))) + 
+  geom_bar() + 
+  my_theme + 
+  ggtitle("Fig 4: Wine quality by cluster id", subtitle = "K-means does not tend to accurately cluster data based on wine quality") + 
+  scale_fill_viridis_d(option = "mako", name = "quality score") + 
+  xlab("cluster")
+
+```
+
+
+```{r wine2, echo = FALSE, message=FALSE, warning = FALSE}
 pca1 = prcomp(wine_comps, scale = TRUE, rank = 2)
 loadings = data.frame(pca1$rotation)
 loadings
@@ -53,135 +102,187 @@ wine$pc2 = scores[,2]
 ggplot(wine, aes(x = pc1, y = pc2, color = color)) + 
   geom_point() + 
   my_theme + 
-  scale_color_manual(values = c("red", "steelblue2")) + 
-  ggtitle("Principle Components Analysis: Color", subtitle = "PCA identified two distinct clusters of wine segmented by color")
+  scale_color_viridis_d(option = "mako", begin = .4, end = .8, alpha = 0.8) + 
+  ggtitle("Fig 5: Principle Components Analysis (Color)", subtitle = "PCA identified two distinct clusters of wine segmented by color")
 
 # plot by quality 
-ggplot(wine, aes(x = pc1, y = pc2, color = quality)) + 
+ggplot(wine, aes(x = pc1, y = pc2, color = as.factor(quality))) + 
   geom_point(alpha = 0.7) + 
   my_theme + 
-  scale_color_viridis(option  = "plasma") + 
-  ggtitle("Principle Components Analysis: Quality", subtitle = "Wine quality does not seem to emerge naturally as a clustering factor based on PCA")
-
-# kmeans
-set.seed(13)
-wine_km1 = wine[,-c(13,14,15)] # keep quality
-wine_km2 = wine[,-c(12,14,15)] # keep color
-
-km1 = kmeans(wine_km1, nstart = 20, centers = 2)
-km2 = kmeans(wine_km2, nstart = 20, centers = 2)
-
-fviz_cluster(km1, data = wine_km1, labelsize = 0) + scale_color_manual(values = c("red","steelblue2"))
-fviz_cluster(km2, data = wine_km2, labelsize = 0) + scale_color_manual(values = c("red","steelblue2"))
+  scale_color_viridis_d(option = "mako", name = "quality score") +
+  ggtitle("Fig 6: Principle Components Analysis (Quality)", subtitle = "Wine quality does not seem to emerge naturally as a clustering factor")
 
 ```
 
 
 # Market segmentation
 ## Data
-## Methodology
-## Interpretation
+To investigate trends in customer behavior, Twitter data was collected over a seven-day period in June 2014. For each of NutrientH2O's 7,882 followers, a snapshot of each tweet posted during this period was taken. Next, Amazon's Mechanical Turk service was utilized to catalogue each user's tweets into 36 distinct categories, each representing a general area of interest (e.g. politics, sports, family, etc.). In addition, tweets were flagged as "spam" or "adult" for inappropriate content. Individual catalogued weets were then aggregated and anonymized at the user level, with numeric counts of tweets sorted into each interest category. For this analysis, any users with tweets flagged as spam or adult were excluded to accurately identify target customer clusters for the Company. 
 
-```{r}
+```{r social_summary, echo = FALSE, warning = FALSE, message = FALSE}
 social = read.csv("data/social_marketing.csv")
-
 head(social)
 
-social_clean = social %>% filter(spam == 0) %>% filter(adult == 0)
-social_comps = social_clean[,-c(1,36, 37)]
-pca = prcomp(social_comps, scale = TRUE, rank = 3)
-loadings = data.frame(pca$rotation)
-loadings
-scores = pca$x
+social_clean = social %>% filter(spam == 0) %>% filter(adult == 0) %>% select(-c(spam, adult))
 
-social_clean$pc1 = scores[,1]
-social_clean$pc2 = scores[,2]
-
-plot(pca, type = "l")
-var = get_pca_var(pca)
-fviz_pca_var(pca, col.var = "black")
-corrplot(var$cos2, is.corr=FALSE)
-
-# kmeans
-social_km = social_clean[,-c(1,36:39)]
-fviz_nbclust(social_km, kmeans, method = "wss", k.max = 20) + theme_minimal() + ggtitle("Elbow Method: Optimal Clusters")
-km2 = kmeans(social_km, centers = 6, nstart = 20)
-fviz_cluster(km2, data = social_km) + theme_minimal() + ggtitle("k = 6")
-
-cluster = c(1:6)
-center = km2$center
-center_df = data.frame(cluster, center)
-center_long = center_df %>% pivot_longer(chatter:small_business)
-
-ggplot(center_long, aes(x = name, y = log(value), color = as.factor(cluster), group = as.factor(cluster))) + 
-  geom_line(size = 0.8, alpha = 0.7) + 
+social_clean %>% 
+  select(-X) %>% 
+  pivot_longer(chatter:small_business) %>%
+  group_by(name) %>%
+  summarize(count = sum(value)) %>%
+  ggplot(aes(x=reorder(name, count), y = count)) + 
+  geom_col(fill = "#3E3F7A", alpha = 0.9) + 
+  coord_flip() + 
+  scale_x_discrete(expand=c(0, 0.2)) + 
   my_theme + 
-  scale_color_viridis(option = "mako", discrete = TRUE) + 
-  ggtitle("Customer segmentation analysis (K = 5)", subtitle = "")
+  xlab("Interest") +
+  ylab("Tweets") +
+  ggtitle("Fig 1: Interest categories by frequency", subtitle = "Chatter, photo sharing and health/nutrition are the most popular interests tweeted about \n by NutrientH2O's followers")
 
-
+corr = cor(social_clean[,-c(1,36:37)])
+ggcorrplot(corr, hc.order = TRUE) + 
+  scale_fill_viridis_c(option = "mako", begin = 0.2, end = 0.8) +
+  my_theme + 
+  theme(axis.text=element_text(size=8),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
+  ggtitle("Fig 2: Correlation plot of interests") + 
+  xlab("") + 
+  ylab("")
 ```
 
 
-# Groceries
-```{r}
+## Methodology
+Two clustering techniques were used to sort the Company's Twitter followers into groups with similar attributes. First, an unsupervised K-means algorithm was used to narturally identify like clusters according to users' tweet identities. The Elbow method was used to select an optimal number of clusters, with variance decreasing at approximately at an optimal K value of 5. As the raw data already used the same numerical scale for flagged categorical counts, the data was not normalized. Next, the clusters were plotted by the average values of each interest category. Finally, PCA with rank 1 was performed to analyze the most heavily weighted interests in each cluster to form the five customer segmentations identified using K-means.
+
+```{r social_elbow, echo = FALSE, message = FALSE, warning = FALSE}
+# kmeans
+set.seed(123)
+social_km = social_clean[,-c(1,36:39)]
+factoextra::fviz_nbclust(social_km, kmeans, method = "wss", k.max = 20) + theme_minimal() + ggtitle("Fig 2: Elbow Method: Optimal Clusters")
+```
+
+
+## Findings
+  The K-means unsupervised algorithm with an optimal k-value of four identified distinct clusters that represent the key customers of NutrientH2O. As seen in Figure 3, all clusters had a fairly high proportion of tweets categorized as "chatter" and "photo-sharing". This is not surprising as these are general categories that apply to many tweets. Looking past these two categories, the clusters diverge by their next most common interests. Cluster one politics, travel, news and current events as their highest average tweet categories while cluster two averaged highest in health and nutrition, personal fitness, outdoors, and cooking. The third cluster averaged highest in shopping, cooking, and fashion and beauty while the fourth cluster included mostly sports, online gaming, and college/university tweets. Overall, NutrientH2O's Twitter followers seem to fall into four main categories that appear to vary based on age and gender. To further decompose the main interests of the four clusters, we will next use Principle Component Analysis of rank one. 
+
+```{r social1, echo = FALSE, message = FALSE, warning = FALSE}
+social = read.csv("data/social_marketing.csv")
+
+social_clean = social %>% filter(spam == 0) %>% filter(adult == 0)
+
+pca_full = prcomp(social_clean[,-c(1,36:37)], scale = FALSE, rank = 5)
+#pca_full$rotation
+
+km2 = kmeans(social_km, centers = 4, nstart = 20)
+cluster = c(1:4)
+center = km2$center
+clusters = km2$cluster
+center_df = data.frame(cluster, center)
+center_long = center_df %>% pivot_longer(chatter:small_business)
+
+center_df$cluster = c("politics.travel.news", "college.gaming.sports", "health.fitness.cooking", "cooking.fashion.beauty")
+center_df_long = pivot_longer(center_df, chatter:small_business)
+ggplot(center_df_long, aes(x = name,y = value, fill = cluster)) + 
+  geom_col() + 
+  scale_fill_viridis_d(option = "mako", begin = .2, end = .8, direction = -1, alpha = 0.9) + 
+  my_theme + 
+  ggtitle("Fig 3: Cluster averages by interest category", subtitle = "Most tweets fall into the chatter and photo-sharing categories but then diverge by cluster") + 
+  coord_flip()
+```
+
+
+  After performing PCA on each cluster, we were able to identify the top interests for each customer cluster that solidified our findings from the original k-means averages of each cluster. The first cluster of followers tended to tweet most about politics, travel, and news, which we believe represents and older customer left of center on the political spectrum. The second cluster identified younger, most likely college-aged customers whose interests included college/university, online gaming, and sports. The third cluster tended to associate customers with health and nutrition, fitness, and cooking, while the fourth and final cluster identified customers who tweeted mostly about cooking, fashion, and beauty. These four dominant clusters maximize the variance between groups. 
+
+```{r, echo = FALSE, message=FALSE, warning = FALSE}
+## pca of each cluster with rank = 1
+social_comps = social_clean[,-c(1,36, 37)] %>% cbind(clusters)
+
+pca1 = social_comps %>% filter(clusters == 1) %>% prcomp(., scale = FALSE, rank = 1)
+c1_politics.travel.news = data.frame(pca1$rotation) %>% arrange(desc(PC1))
+kbl(c1_politics.travel.news)
+
+pca2 = social_comps %>% filter(clusters == 2) %>% prcomp(., scale = FALSE, rank = 1)
+c2_college.gaming.sports = data.frame(pca2$rotation) %>% arrange(desc(PC1))
+kbl(c2_college.gaming.sports)
+
+pca3 = social_comps %>% filter(clusters == 3) %>% prcomp(., scale = FALSE, rank = 1)
+c3_health.fitness.cooking = data.frame(pca3$rotation) %>% arrange(desc(PC1))
+kbl(c3_health.fitness.cooking)
+
+pca4 = social_comps %>% filter(clusters == 4) %>% prcomp(., scale = FALSE, rank = 1)
+c4_cooking.fashion.beauty = data.frame(pca4$rotation) %>% arrange(desc(PC1)) 
+kbl(c4_cooking.fashion.beauty)
+
+pca_df = cbind(c1_politics.travel.news, c2_college.gaming.sports, c3_health.fitness.cooking, c4_cooking.fashion.beauty)
+colnames(pca_df) = c("politics.travel.news", "college.gaming.sports", "health.fitness.cooking", "cooking.fashion.beauty") 
+pca_df2 = data.frame(t(pca_df))
+pca_df2$cluster = rownames(pca_df2)
+pca_df2 %>% pivot_longer(chatter:politics) %>%
+ggplot(aes(x = name, y = abs(value), fill = cluster)) + 
+  geom_col() + 
+  scale_fill_viridis_d(option = "mako", begin = .2, end = .8, direction = -1, alpha = 0.9) + 
+  my_theme + 
+  ggtitle("Fig 4: Cluster PCA by interest category") + 
+  coord_flip()
+```
+
+
+# Grocery Basket Rules Mining 
+The data file is a list of shopping baskets: one person's basket for each row, with multiple items per row separated by commas -- you'll have to cobble together a few utilities for processing this into the format expected by the "arules" package. Pick your own thresholds for lift and confidence; just be clear what these thresholds are and how you picked them. Do your discovered item sets make sense? Present your discoveries in an interesting and concise way.
+
+## Data
+The data set used in this analysis includes 9,835 grocery baskets for individuals with each column representing an individual item in each basket.
+
+## Methodology
+In this analysis, we will attempt to find association rules above a certain threshold of confidence, lift, and support of commonly purchased items to discern items typically purchased together, rather than find clusters based on individual customers' preferences. To do so, we first cleaned the data and converted each row into a list recognized by the arules clustering algorithm. Then, the resulting arules were plotted to visualize the relationship between lift, support, and confidence for our dataset. In association rule mining, support represents the frequency of how often a specific item or itemset appears in all baskets. The most popular or essential items therefore have higher support, such as bread, milk, and eggs. Furthermore, itemsets with complementary items, such as bread and butter, will have higher support than itemsets with unrelated items, such as bread and shampoo. Confidence refers to the likeliness of occurrence of an item Y given the presence of item X in the basket. However, the relative frequencies of both item X and Y need to be taken into account to prevent unrealistically large confidence values. Life comes into play here, controlling for support of item Y when finding the conditional probability of item Y given item X. In simple terms, lift represents the ratio of confidence to the probability of occurrence of item Y. After converting our basket data into transaction form, we used the apriori algorithm to prune the association rules using minimum item thresholds. For our data, we used a minimum support threshold of 0.001, confidence of 0.5, and a max itemset length of five. Next, we chose a subset of the rules to further increase our itemset thresholds to 0.001 support, 0.5 confidence, and 10 lift. This resulted in 14 association rules as discussed below. 
+
+## Findings
+The selected association rules revealed a few easily identifiable patterns in consumer shopping behavior. For example, common "essential" foods such as eggs, vegetables, milk, butter, and cheese are present in multiple association rules of various configurations, indicating that baskets containing these items are frequent in occurrence across shoppers. In addition, a few other relations were found including between the purchase of liquor and red/blush wine with bottled beer, indicating that many consumers purchase their alcohol at once at the grocery store, and between popcorn and soda with salty snacks, showing there is large occurrence of consumers shopping for events like parties or other social gatherings. In addition, common meals such as sandwiches and cake are found in our association rules with ham and cheese associated with the purchase of white bread, and the baking powder and flour associated with the purchase of sugar. Overall, we find significant patterns in the shopping behavior of consumers with relatively high levels of support, lift, and confidence. Grocery stores would be smart to take advantage of these patterns to organize their product shelves - putting soda, popcorn, and chips near eachother for those shopping for a party, common baking ingredients together for those baking a cake, and staple items such as milk, eggs, yogurt, vegetables, and cheese together for the everyday consumer. In addition, stores could take advantage of these results to create weekly ads and coupons for combined product purchases, thus increasing sales and revenue by making it easier for consumers to bundle items frequently purchased together. 
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
 library(tidyverse)
 library(arules) 
 library(arulesViz)
 library(igraph)
+library(dplyr)
+library(foreach)
+library(stringr)
 
-# Association rule mining
+groceries_raw = read.delim("data/groceries.txt", header = FALSE)
 
-# Read in groceries
-groceries_raw = read.csv("data/groceries.txt", header=FALSE)
+# splits basket string into a unique i for each item in basket 
+groceries_clean = foreach(i = 1:nrow(groceries_raw), .combine = rbind) %do% {
+  split = groceries_raw$V1[i] %>% 
+    str_split(pattern = ",") %>% 
+    as.data.frame() %>% 
+    mutate(basket_id = i) %>% 
+    as.data.frame()
+  colnames(split) = c("item", "basket_id")
+  split
+}
+# convert basket id to factor for processing in arules function
+groceries_clean$basket_id = factor(groceries_clean$basket_id)
 
-str(groceries_raw)
-summary(groceries_raw)
-head(groceries_raw)
+## Arules rule mining 
+# first need to convert to list form 
+groc_list = split(x=groceries_clean$item, f=groceries_clean$basket_id)
 
-####
-# Data pre-preprocessing
-####
+# then convert to transaction form using "as" function
+groc_trans = as(groc_list, "transactions")
+summary(groc_trans)
 
-## Cast this resulting list of playlists as a special arules "transactions" class.
-groctrans = as(groceries_raw, "transactions")
-summary(groctrans )
+# create rules using "apriori" function 
+groc_rules = apriori(groc_trans, 
+                    parameter=list(support=.001, confidence=.5, maxlen=10))
 
-# Now run the 'apriori' algorithm
-# Look at rules with support > .01 & confidence >.1 & length (# artists) <= 5
-itemrules = apriori(groctrans , 
-	parameter=list(support=.01, confidence=.1, maxlen=2))
-                         
-# Look at the output... so many rules!
-#inspect(itemrules)
-
-## Choose a subset
-#inspect(subset(itemrules, lift > 10 & confidence > 0.05))
-
+# plot all the rules in (support, confidence) space
 # can swap the axes and color scales
-plot(itemrules, measure = c("support", "lift"), shading = "confidence")
+plot(groc_rules, measure = c("support", "lift"), shading = "confidence")
 
-# "two key" plot: coloring is by size (order) of item set
-plot(itemrules, method='two-key plot')
-# order 1 are most popular
-# higher number of items indicates higher confidence
-
-# can now look at subsets driven by the plot
-#(subset(itemrules, support > 0.035))
-#inspect(subset(itemrules, confidence > 0.6))
-
-
-# graph-based visualization
-sub1 = subset(itemrules, subset=confidence > 0.01 & support > 0.005)
-summary(sub1)
-plot(sub1, method='graph')
-?plot.rules
-
-plot(head(sub1, 100, by='lift'), method='graph')
-
-# export a graph
-sub1 = subset(itemrules, subset=confidence > 0.25 & support > 0.005)
+# export arules to gephi 
+sub1 = subset(groc_rules, subset=confidence > 0.5 & support > 0.001 & lift > 10)
 saveAsGraph(sub1, file = "itemrules.graphml")
+inspect(sub1)
 ```
 
 
