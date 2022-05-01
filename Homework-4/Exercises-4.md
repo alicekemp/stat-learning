@@ -1475,7 +1475,7 @@ it easier for consumers to bundle items frequently purchased together.
     ## set transactions ...[169 item(s), 9835 transaction(s)] done [0.01s].
     ## sorting and recoding items ... [157 item(s)] done [0.00s].
     ## creating transaction tree ... done [0.00s].
-    ## checking subsets of size 1 2 3 4 5 6 done [0.01s].
+    ## checking subsets of size 1 2 3 4 5 6 done [0.02s].
     ## writing ... [5668 rule(s)] done [0.00s].
     ## creating S4 object  ... done [0.00s].
 
@@ -1526,3 +1526,5 @@ it easier for consumers to bundle items frequently purchased together.
     ##       tropical fruit,                                                                              
     ##       whole milk,                                                                                  
     ##       yogurt}                 => {butter}         0.001016777  0.6250000 0.001626843 11.27867    10
+
+![](gephi_graph.png)<!-- -->

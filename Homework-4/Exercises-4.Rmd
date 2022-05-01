@@ -283,6 +283,8 @@ plot(groc_rules, measure = c("support", "lift"), shading = "confidence")
 sub1 = subset(groc_rules, subset=confidence > 0.5 & support > 0.001 & lift > 10)
 saveAsGraph(sub1, file = "itemrules.graphml")
 inspect(sub1)
+
+knitr::include_graphics("gephi_graph.png")
 ```
 
 
